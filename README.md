@@ -1,5 +1,5 @@
-## About Amazon Connect Quick Connects CDK
-This solution can be used to create quick connects and associate/disassociate these with queues.
+## About Amazon Connect Voice Channel Deployment CDK
+This solution can be used to create agents/queues/flows/hoursofoperation in Amazon Connect.
 
 ### Installation
 
