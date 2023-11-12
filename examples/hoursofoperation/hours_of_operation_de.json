@@ -1,0 +1,42 @@
+{
+    "name": "Basic Hours",
+    "description": "Open hours",
+    "timeZone": "Europe/Dublin",
+    "timeslices": [
+        {
+            "day": "SUNDAY",
+            "startH": 9,
+            "startM": 0,
+            "endH": 17,
+            "endM": 0
+        },
+        {
+            "day": "MONDAY",
+            "startH": 9,
+            "startM": 0,
+            "endH": 17,
+            "endM": 0
+        },
+        {
+            "day": "TUESDAY",
+            "startH": 9,
+            "startM": 0,
+            "endH": 17,
+            "endM": 0
+        },
+        {
+            "day": "WEDNESDAY",
+            "startH": 9,
+            "startM": 0,
+            "endH": 17,
+            "endM": 0
+        },
+        {
+            "day": "THURSDAY",
+            "startH": 9,
+            "startM": 0,
+            "endH": 17,
+            "endM": 0
+        }
+    ]
+}
