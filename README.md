@@ -6,13 +6,13 @@ This solution can be used to create quick connects and associate/disassociate th
 Clone the repo
 
 ```bash
-git clone https://github.com/photosphere/connect-cdk.git
+git clone https://github.com/photosphere/connect-cdk-voice-channel.git
 ```
 
 cd into the project root folder
 
 ```bash
-cd connect-cdk
+cd connect-cdk-voice-channel
 ```
 
 #### Create virtual environment
