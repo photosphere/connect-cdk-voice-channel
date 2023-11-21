@@ -91,9 +91,6 @@ with st.sidebar:
     # connect configuration
     connect_instance_id = st.text_input('Connect Instance Id')
 
-    os.environ['res_connect_instance_arn'] = ''
-    os.environ['res_security_profile_arn'] = ''
-
     # load env
     if st.button('Load Configuration'):
         connect_client = boto3.client("connect")
@@ -112,6 +109,8 @@ with st.sidebar:
         for item in res['SecurityProfileSummaryList']:
             if (item['Name'] == 'Agent'):
                 security_profile_arn_val = item['Arn']
+                with open('security_profile.json', 'w') as f:
+                    json.dump(item, f)
                 break
 
         connect_instance_arn = st.text_input(
@@ -133,9 +132,8 @@ with st.sidebar:
 
     # save env
     if st.button('Save Configuration'):
-        os.environ["connect_instance_arn"] = connect_instance_arn
-        os.environ["security_profile_arn"] = security_profile_arn
         os.environ["tenant_name"] = tenant_name
+        os.environ["tenant_description"] = tenant_description
         os.environ["tts_voice"] = tts_voice
         st.success("ENV has been set")
 
@@ -204,8 +202,17 @@ class ConnectCdkVoiceChannelStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # parameter
-        connect_instance_arn = os.environ["connect_instance_arn"]
-        security_profile_arn = os.environ["security_profile_arn"]
+        connect_instance_arn = ''
+        if os.path.exists('connect.json'):
+            with open('connect.json') as f:
+                json_data = json.load(f)
+                connect_instance_arn = json_data['Arn']
+
+        security_profile_arn = ''
+        if os.path.exists('security_profile.json'):
+            with open('security_profile.json') as f:
+                json_data = json.load(f)
+                security_profile_arn = json_data['Arn']
 
         now = datetime.now()
         formatted_now = now.strftime("%Y%m%d%H%M%S")
@@ -258,7 +265,7 @@ class ConnectCdkVoiceChannelStack(Stack):
             os.environ["ivr_error_message"] = message_data['errorMessage']
 
         # load contact flow
-        with open('connect_flow.json') as f:
+        with open('examples/flows/welcome_message_flow/welcome_message_flow.json') as f:
             flow_data = json.load(f)
             flow_content = json.dumps(flow_data)
             flow_content = flow_content.replace(

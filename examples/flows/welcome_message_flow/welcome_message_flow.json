@@ -255,7 +255,7 @@
         },
         {
             "Parameters": {
-                "QueueId": "arn:aws:connect:us-west-2:991727053196:instance/11a3d762-53cc-421e-8641-fd8923fa2f7f/queue/7fa419ac-7ee7-4265-8325-e903ed9a4cc8"
+                "QueueId": "queue-arn"
             },
             "Identifier": "2c1bb3e4-d5ba-401e-b698-d6a26573c7b3",
             "Type": "UpdateContactTargetQueue",
