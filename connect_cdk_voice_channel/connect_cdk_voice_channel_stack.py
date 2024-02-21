@@ -45,7 +45,7 @@ with st.expander("Hours of Operation Configuration", expanded=True):
         with open('hours_of_operation.json', 'w') as f:
             json.dump(hop_data, f)
 
-tab1_button = st.checkbox('Deploy IVR Flow')
+tab1_button = st.checkbox('Deploy IVR Flow', value=True, disabled=True)
 tab2_button = st.checkbox('Deploy Survey Flow')
 tab3_button = st.checkbox('Deploy Screen Flow')
 
@@ -116,11 +116,14 @@ if tab2_button:
 
                 survey_message = st.text_area(
                     'Survey Message', value=survey_data['surveyMessage'])
+                survey_message_feedback = st.text_area(
+                    'Survey Message Feedback', value=survey_data['surveyMessageFeedback'])
 
                 save_button = st.button('Update Survey Message')
                 if save_button:
                     updated_survey_data = {
-                        "surveyMessage": survey_message
+                        "surveyMessage": survey_message,
+                        "surveyMessageFeedback": survey_message_feedback
                     }
 
                     with open('survey_message.json', 'w') as f:
@@ -146,32 +149,39 @@ with st.sidebar:
     if st.button('Load Configuration'):
         connect_client = boto3.client("connect")
 
-        res = connect_client.describe_instance(
-            InstanceId=connect_instance_id)
-        connect_filtered = {k: v for k, v in res['Instance'].items() if k in [
-            'Id', 'Arn']}
-        with open('connect.json', 'w') as f:
-            json.dump(connect_filtered, f)
+        try:
+            res = connect_client.describe_instance(
+                InstanceId=connect_instance_id)
+            connect_filtered = {k: v for k, v in res['Instance'].items() if k in [
+                'Id', 'Arn']}
+            with open('connect.json', 'w') as f:
+                json.dump(connect_filtered, f)
 
-        connect_instance_arn_val = res['Instance']['Arn']
+            connect_instance_arn_val = res['Instance']['Arn']
 
-        res = connect_client.list_security_profiles(
-            InstanceId=connect_instance_id)
-        for item in res['SecurityProfileSummaryList']:
-            if (item['Name'] == 'Agent'):
-                security_profile_arn_val = item['Arn']
-                with open('security_profile.json', 'w') as f:
-                    json.dump(item, f)
-                break
+            res = connect_client.list_security_profiles(
+                InstanceId=connect_instance_id)
+            for item in res['SecurityProfileSummaryList']:
+                if (item['Name'] == 'Agent'):
+                    security_profile_arn_val = item['Arn']
+                    item_filtered = {k: v for k, v in item.items() if k in [
+                        'Id', 'Arn', 'Name']}
+                    with open('security_profile.json', 'w') as f:
+                        json.dump(item_filtered, f)
+                    break
 
-        connect_instance_arn = st.text_input(
-            'Amazon Connect instance ARN', value=connect_instance_arn_val)
+            connect_instance_arn = st.text_input(
+                'Amazon Connect instance ARN', value=connect_instance_arn_val)
 
-        # security profile configuration
-        security_profile_arn = st.text_input(
-            'Security profile ARN (Agent Role)', value=security_profile_arn_val)
+            # security profile configuration
+            security_profile_arn = st.text_input(
+                'Security profile ARN (Agent Role)', value=security_profile_arn_val)
 
-        st.success("Arns have been loaded")
+            st.success("Connect instance has been loaded")
+
+        except Exception as e:
+            st.error('Load Connect instance failed')
+            st.error(e)
 
     # tenat configuration
     tenant_name = st.text_input('Tenant Name (Required)')
@@ -315,7 +325,7 @@ class ConnectCdkVoiceChannelStack(Stack):
             os.environ["ivr_open_hour_message"] = message_data['openHourMessage']
             os.environ["ivr_error_message"] = message_data['errorMessage']
 
-        # load contact flow
+        # load contact flow - IVR
         with open('examples/flows/welcome_message_flow/welcome_message_flow.json') as f:
             flow_data = json.load(f)
             flow_content = json.dumps(flow_data)
@@ -333,17 +343,43 @@ class ConnectCdkVoiceChannelStack(Stack):
                 "error-message", os.environ["ivr_error_message"])
             flow_content = flow_content.replace(
                 "queue-arn", cfn_queue.attr_queue_arn)
-            with open('connect_flow_updated.json', 'w') as f:
+            with open('connect_flow_ivr_updated.json', 'w') as f:
                 f.write(flow_content)
 
-        cfn_contact_flow = connect.CfnContactFlow(self, "CfnContactFlow"+formatted_now,
-                                                  content=flow_content,
-                                                  instance_arn=connect_instance_arn,
-                                                  description="Flow created using cfn",
-                                                  name=os.environ["tenant_name"] +
-                                                  " Inbound Flow",
-                                                  type="CONTACT_FLOW"
-                                                  )
+        cfn_contact_flow_ivr = connect.CfnContactFlow(self, "CfnContactFlow"+formatted_now,
+                                                      content=flow_content,
+                                                      instance_arn=connect_instance_arn,
+                                                      description="IVR flow created using cfn",
+                                                      name=os.environ["tenant_name"] +
+                                                      " Inbound Flow",
+                                                      type="CONTACT_FLOW"
+                                                      )
+
+        # load contact flow - Survey
+        if os.path.exists('survey_message.json'):
+            with open('survey_message.json') as f:
+                message_data = json.load(f)
+                os.environ["survey_message"] = message_data['surveyMessage']
+                os.environ["survey_message_feedback"] = message_data['surveyMessageFeedback']
+
+            with open('examples/flows/survey_message_flow/survey_message_flow.json') as f:
+                flow_data = json.load(f)
+                flow_content = json.dumps(flow_data)
+                flow_content = flow_content.replace(
+                    "survey_message", os.environ["survey_message"])
+                flow_content = flow_content.replace(
+                    "survey_message_feedback", os.environ["survey_message_feedback"])
+                with open('connect_flow_survey_updated.json', 'w') as f:
+                    f.write(flow_content)
+
+            cfn_contact_flow_survey = connect.CfnContactFlow(self, "CfnContactFlow"+formatted_now,
+                                                             content=flow_content,
+                                                             instance_arn=connect_instance_arn,
+                                                             description="Survey flow created using cfn",
+                                                             name=os.environ["tenant_name"] +
+                                                             " Inbound Flow",
+                                                             type="CONTACT_FLOW"
+                                                             )
 
         # define routing profile
         cfn_routing_profile = connect.CfnRoutingProfile(self, "CfnRoutingProfile"+formatted_now,
