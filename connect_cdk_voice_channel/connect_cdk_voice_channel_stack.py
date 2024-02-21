@@ -377,7 +377,7 @@ class ConnectCdkVoiceChannelStack(Stack):
                                                              instance_arn=connect_instance_arn,
                                                              description="Survey flow created using cfn",
                                                              name=os.environ["tenant_name"] +
-                                                             " Inbound Flow",
+                                                             " Survey Flow",
                                                              type="CONTACT_FLOW"
                                                              )
 
