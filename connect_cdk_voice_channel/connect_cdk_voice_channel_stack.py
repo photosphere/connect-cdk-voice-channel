@@ -108,6 +108,25 @@ if tab2_button:
         with st.expander("Survey Configuration", expanded=True):
             uploaded_survey_file = st.file_uploader(
                 "Choose a Json file of Survey Options", accept_multiple_files=False, type="json")
+            if uploaded_survey_file is not None:
+                survey_data = json.load(uploaded_survey_file)
+
+                with open('survey_message.json', 'w') as f:
+                    json.dump(survey_data, f)
+
+                survey_message = st.text_area(
+                    'Survey Message', value=survey_data['surveyMessage'])
+
+                save_button = st.button('Update Survey Message')
+                if save_button:
+                    updated_survey_data = {
+                        "surveyMessage": survey_message
+                    }
+
+                    with open('survey_message.json', 'w') as f:
+                        json.dump(updated_survey_data, f)
+
+                    st.success("Survey message have been updated")
 
 
 if tab3_button:
