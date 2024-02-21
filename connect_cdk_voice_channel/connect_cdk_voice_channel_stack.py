@@ -346,7 +346,7 @@ class ConnectCdkVoiceChannelStack(Stack):
             with open('connect_flow_ivr_updated.json', 'w') as f:
                 f.write(flow_content)
 
-        cfn_contact_flow_ivr = connect.CfnContactFlow(self, "CfnContactFlow"+formatted_now,
+        cfn_contact_flow_ivr = connect.CfnContactFlow(self, "CfnContactFlowIVR"+formatted_now,
                                                       content=flow_content,
                                                       instance_arn=connect_instance_arn,
                                                       description="IVR flow created using cfn",
@@ -372,7 +372,7 @@ class ConnectCdkVoiceChannelStack(Stack):
                 with open('connect_flow_survey_updated.json', 'w') as f:
                     f.write(flow_content)
 
-            cfn_contact_flow_survey = connect.CfnContactFlow(self, "CfnContactFlow"+formatted_now,
+            cfn_contact_flow_survey = connect.CfnContactFlow(self, "CfnContactFlowSurvey"+formatted_now,
                                                              content=flow_content,
                                                              instance_arn=connect_instance_arn,
                                                              description="Survey flow created using cfn",
