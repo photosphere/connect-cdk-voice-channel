@@ -45,44 +45,76 @@ with st.expander("Hours of Operation Configuration", expanded=True):
         with open('hours_of_operation.json', 'w') as f:
             json.dump(hop_data, f)
 
+tab1_button = st.checkbox('Deploy IVR Flow')
+tab2_button = st.checkbox('Deploy Survey Flow')
+tab3_button = st.checkbox('Deploy Screen Flow')
+
 tab1, tab2, tab3 = st.tabs(
-    ["Welcome Message Flow", "Survey Flow", "Screen Flow"])
+    ["IVR Flow", "Survey Flow", "Screen Flow"])
 
-with tab1:
-    # ivr configuration
-    with st.expander("IVR Configuration", expanded=True):
+if tab1_button:
+    with tab1:
+        # ivr configuration
+        with st.expander("IVR Configuration", expanded=True):
 
-        # language of polly
-        lan_df = pd.read_csv('examples/languages/languages_neural.csv')
-        lan_vals = lan_df.iloc[:, 0].unique()
-        lan_selected = st.selectbox('IVR languages', (lan_vals))
+            # language of polly
+            lan_df = pd.read_csv('examples/languages/languages_neural.csv')
+            lan_vals = lan_df.iloc[:, 0].unique()
+            lan_selected = st.selectbox('IVR languages', (lan_vals))
 
-        lan_df['VoiceDisplay'] = lan_df['Voice'] + ','+lan_df['Gender']
-        lan_filter = lan_df['LanguageName'] == lan_selected
-        voice_vals = lan_df.loc[lan_filter,
-                                'VoiceDisplay'].str.replace("*", "")
-        voice_selected = st.selectbox('IVR language voices', (voice_vals))
-        tts_voice = voice_selected.split(",")[0]
+            lan_df['VoiceDisplay'] = lan_df['Voice'] + ','+lan_df['Gender']
+            lan_filter = lan_df['LanguageName'] == lan_selected
+            voice_vals = lan_df.loc[lan_filter,
+                                    'VoiceDisplay'].str.replace("*", "")
+            voice_selected = st.selectbox('IVR language voices', (voice_vals))
+            tts_voice = voice_selected.split(",")[0]
 
-        uploaded_file = st.file_uploader(
-            "Choose a Json file of IVR Messages", accept_multiple_files=False, type="json")
-        if uploaded_file is not None:
-            message_data = json.load(uploaded_file)
-            # welcome message of IVR
-            ivr_welcome_message = st.text_area(
-                'IVR welcome message', value=message_data['welcomeMessage'])
+            uploaded_file = st.file_uploader(
+                "Choose a Json file of IVR Messages", accept_multiple_files=False, type="json")
+            if uploaded_file is not None:
+                message_data = json.load(uploaded_file)
+                # welcome message of IVR
+                ivr_welcome_message = st.text_area(
+                    'IVR welcome message', value=message_data['welcomeMessage'])
 
-            # open hour message of IVR
-            ivr_open_hour_message = st.text_area(
-                'IVR open hour message', value=message_data['openHourMessage'])
+                # open hour message of IVR
+                ivr_open_hour_message = st.text_area(
+                    'IVR open hour message', value=message_data['openHourMessage'])
 
-            # error message of IVR
-            ivr_error_message = st.text_area(
-                'IVR error message', value=message_data['errorMessage'])
+                # error message of IVR
+                ivr_error_message = st.text_area(
+                    'IVR error message', value=message_data['errorMessage'])
 
-            with open('ivr_messages.json', 'w') as f:
-                json.dump(message_data, f)
+                with open('ivr_messages.json', 'w') as f:
+                    json.dump(message_data, f)
 
+                # update
+                save_button = st.button('Update IVR Messages')
+                if save_button:
+                    updated_message_data = {
+                        "welcomeMessage": ivr_welcome_message,
+                        "openHourMessage": ivr_open_hour_message,
+                        "errorMessage": ivr_error_message
+                    }
+
+                    with open('ivr_messages.json', 'w') as f:
+                        json.dump(updated_message_data, f)
+
+                    st.success("IVR messages have been updated")
+
+
+if tab2_button:
+    with tab2:
+        with st.expander("Survey Configuration", expanded=True):
+            uploaded_survey_file = st.file_uploader(
+                "Choose a Json file of Survey Options", accept_multiple_files=False, type="json")
+
+
+if tab3_button:
+    with tab3:
+        with st.expander("Screen Configuration", expanded=True):
+            uploaded_screen_file = st.file_uploader(
+                "Choose a Json file of Screen Fields", accept_multiple_files=False, type="json")
 
 with st.sidebar:
     # connect instance configuration
