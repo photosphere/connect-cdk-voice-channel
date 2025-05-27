@@ -86,10 +86,9 @@ if tab1_button:
 if tab2_button:
     with tab2:
         with st.expander("Survey Configuration", expanded=True):
-            uploaded_survey_file = st.file_uploader(
-                "Choose a Json file of Survey Options", accept_multiple_files=False, type="json")
-            if uploaded_survey_file is not None:
-                survey_data = json.load(uploaded_survey_file)
+             # Load survey messages directly from file
+            with open('examples/flows/survey_message_flow/survey_messages/survey_messages_us.json', 'r') as f:
+                survey_data = json.load(f)
 
                 with open('survey_message.json', 'w') as f:
                     json.dump(survey_data, f)
