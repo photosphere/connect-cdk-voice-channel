@@ -1,0 +1,382 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "833ad7ee-4b0e-4337-be2f-9f10f1850f34",
+  "Metadata": {
+    "entryPointPosition": {
+      "x": -680,
+      "y": -57.6
+    },
+    "ActionMetadata": {
+      "833ad7ee-4b0e-4337-be2f-9f10f1850f34": {
+        "position": {
+          "x": -720,
+          "y": 88
+        }
+      },
+      "1651b54e-1b1e-4875-aeab-d62735605ac5": {
+        "position": {
+          "x": -450.4,
+          "y": 82.4
+        },
+        "parameters": {
+          "FlowAttributes": {
+            "CustomerNumber": {
+              "Value": {
+                "useDynamic": true
+              }
+            }
+          }
+        }
+      },
+      "b6bebe42-13ea-4803-a45e-f6a891a505a1": {
+        "position": {
+          "x": 937.6,
+          "y": 290.4
+        }
+      },
+      "System attributes": {
+        "position": {
+          "x": 436,
+          "y": 48.8
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "Attributes": {
+            "CustomerPhoneNumber": {
+              "useDynamic": true
+            },
+            "CustomerEmail": {
+              "useDynamic": true
+            },
+            "LastAgentID": {
+              "useDynamic": true
+            },
+            "LastChannel": {
+              "useDynamic": true
+            },
+            "Language": {
+              "useDynamic": true
+            },
+            "NewCustomer": {
+              "useDynamic": true
+            }
+          }
+        },
+        "dynamicParams": [
+          "CustomerPhoneNumber",
+          "CustomerEmail",
+          "LastAgentID",
+          "LastChannel",
+          "Language",
+          "NewCustomer"
+        ]
+      },
+      "800d1355-da73-4a82-9390-0294d54e4a36": {
+        "position": {
+          "x": 666.4,
+          "y": 247.2
+        },
+        "parameters": {
+          "ViewResource": {
+            "Id": {
+              "displayName": "Detail"
+            }
+          },
+          "InvocationTimeLimitSeconds": {
+            "unit": 60
+          },
+          "ViewData": {
+            "AttributeBar": {
+              "useJson": true
+            },
+            "Sections": {
+              "useJson": true
+            }
+          }
+        }
+      },
+      "aed8fd29-78bf-461f-b39b-f0b6ec86c68c": {
+        "position": {
+          "x": -176.8,
+          "y": 76.8
+        },
+        "parameters": {
+          "ProfileRequestData": {
+            "IdentifierName": {
+              "displayName": "Phone"
+            },
+            "IdentifierValue": {
+              "useDynamic": true
+            }
+          }
+        },
+        "useDynamic": {
+          "IdentifierName": true,
+          "IdentifierValue": true
+        },
+        "customerProfilesAction": "GetCustomerProfile"
+      },
+      "32650649-ad04-4fd3-9b6d-1ecf340aa596": {
+        "position": {
+          "x": 128,
+          "y": 423.2
+        },
+        "parameters": {
+          "ProfileRequestData": {
+            "ProfileId": {
+              "useDynamic": true
+            }
+          }
+        }
+      },
+      "9833ec72-a5eb-404d-906e-3153aa12289c": {
+        "position": {
+          "x": -167.2,
+          "y": 399.2
+        },
+        "parameters": {
+          "ProfileRequestData": {
+            "FirstName": {
+              "useDynamic": true
+            },
+            "PhoneNumber": {
+              "useDynamic": true
+            }
+          }
+        },
+        "useDynamic": {
+          "FirstName": true,
+          "PhoneNumber": true
+        },
+        "customerProfilesAction": "CreateCustomerProfile"
+      }
+    },
+    "Annotations": [],
+    "name": "AWS ScreenPop Detail View Inbound Flow - EN - CDK",
+    "description": "cdk",
+    "type": "contactFlow",
+    "status": "published",
+    "hash": {}
+  },
+  "Actions": [
+    {
+      "Parameters": {
+        "FlowLoggingBehavior": "Enabled"
+      },
+      "Identifier": "833ad7ee-4b0e-4337-be2f-9f10f1850f34",
+      "Type": "UpdateFlowLoggingBehavior",
+      "Transitions": {
+        "NextAction": "1651b54e-1b1e-4875-aeab-d62735605ac5"
+      }
+    },
+    {
+      "Parameters": {
+        "FlowAttributes": {
+          "CustomerNumber": {
+            "Value": "$.CustomerEndpoint.Address"
+          }
+        }
+      },
+      "Identifier": "1651b54e-1b1e-4875-aeab-d62735605ac5",
+      "Type": "UpdateFlowAttributes",
+      "Transitions": {
+        "NextAction": "aed8fd29-78bf-461f-b39b-f0b6ec86c68c",
+        "Errors": [
+          {
+            "NextAction": "aed8fd29-78bf-461f-b39b-f0b6ec86c68c",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "b6bebe42-13ea-4803-a45e-f6a891a505a1",
+      "Type": "DisconnectParticipant",
+      "Transitions": {}
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "CustomerFullName": "$.Customer.FirstName $.Customer.LastName",
+          "CustomerPhoneNumber": "$.Customer.PhoneNumber",
+          "CustomerEmail": "$.Customer.EmailAddress",
+          "LastAgentID": "$.Customer.CalculatedAttributes._last_agent_id",
+          "LastChannel": "$.Customer.CalculatedAttributes._last_channel",
+          "QueueName": "BasicQueue",
+          "Language": "$.LanguageCode",
+          "Category": "TEST",
+          "NewCustomer": "$.Customer.CalculatedAttributes._new_customer"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "System attributes",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "800d1355-da73-4a82-9390-0294d54e4a36",
+        "Errors": [
+          {
+            "NextAction": "800d1355-da73-4a82-9390-0294d54e4a36",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ViewResource": {
+          "Id": "arn:aws:connect:us-east-1:aws:view/detail:1"
+        },
+        "InvocationTimeLimitSeconds": "900",
+        "ViewData": {
+          "AttributeBar": [
+            {
+              "AutoOpen": false,
+              "Label": "Customer Name",
+              "Value": "$.Attributes.CustomerFullName",
+              "Copyable": true
+            },
+            {
+              "AutoOpen": false,
+              "Label": "Customer PhoneNumber",
+              "Value": "$.Attributes.CustomerPhoneNumber",
+              "Copyable": true
+            },
+            {
+              "AutoOpen": false,
+              "Label": "Customer Email",
+              "Value": "$.Attributes.CustomerEmail",
+              "LinkType": "external",
+              "Url": "$.Attributes.CustomerEmail",
+              "Copyable": true
+            }
+          ],
+          "Sections": [
+            {
+              "TemplateString": "<table cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);'> <thead> <tr style='background-color: #327194; color: #fff;'> <th colspan='3' style='text-align: left; padding: 10px;'>Contact</th> </tr> </thead> <tbody> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>New Customer</th> <th style='text-align: left;'>Queue</th> <th style='text-align: left;'>Language</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.NewCustomer</td> <td style='vertical-align: middle;'>$.Attributes.QueueName</td> <td style='vertical-align: middle;'>$.Attributes.Language</td> </tr> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>Customer</th> <th style='text-align: left;'>Phone</th> <th style='text-align: left;'>Email</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.CustomerFullName</td> <td style='vertical-align: middle;'>$.Attributes.CustomerPhoneNumber</td> <td style='vertical-align: middle;'>$.Attributes.CustomerEmail</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>Category</th> <th style='text-align: left;'>Last Channel</th> <th style='text-align: left;'>Last Agent ID</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.Category</td> <td style='vertical-align: middle;'>$.Attributes.LastChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastAgentID</td> </tr></tbody> </table>"
+            }
+          ]
+        }
+      },
+      "Identifier": "800d1355-da73-4a82-9390-0294d54e4a36",
+      "Type": "ShowView",
+      "Transitions": {
+        "NextAction": "b6bebe42-13ea-4803-a45e-f6a891a505a1",
+        "Conditions": [
+          {
+            "NextAction": "b6bebe42-13ea-4803-a45e-f6a891a505a1",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "ActionSelected"
+              ]
+            }
+          },
+          {
+            "NextAction": "b6bebe42-13ea-4803-a45e-f6a891a505a1",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "Back"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "b6bebe42-13ea-4803-a45e-f6a891a505a1",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "b6bebe42-13ea-4803-a45e-f6a891a505a1",
+            "ErrorType": "NoMatchingError"
+          },
+          {
+            "NextAction": "b6bebe42-13ea-4803-a45e-f6a891a505a1",
+            "ErrorType": "TimeLimitExceeded"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ProfileRequestData": {
+          "IdentifierName": "_phone",
+          "IdentifierValue": "$.FlowAttributes.CustomerNumber"
+        },
+        "ProfileResponseData": [
+          "EmailAddress",
+          "FirstName",
+          "LastName",
+          "PhoneNumber"
+        ]
+      },
+      "Identifier": "aed8fd29-78bf-461f-b39b-f0b6ec86c68c",
+      "Type": "GetCustomerProfile",
+      "Transitions": {
+        "NextAction": "32650649-ad04-4fd3-9b6d-1ecf340aa596",
+        "Errors": [
+          {
+            "NextAction": "System attributes",
+            "ErrorType": "NoMatchingError"
+          },
+          {
+            "NextAction": "System attributes",
+            "ErrorType": "MultipleFoundError"
+          },
+          {
+            "NextAction": "9833ec72-a5eb-404d-906e-3153aa12289c",
+            "ErrorType": "NoneFoundError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ProfileRequestData": {
+          "ProfileId": "$.Customer.ProfileId"
+        },
+        "ProfileResponseData": [
+          "CalculatedAttributes._last_agent_id",
+          "CalculatedAttributes._last_channel",
+          "CalculatedAttributes._new_customer"
+        ]
+      },
+      "Identifier": "32650649-ad04-4fd3-9b6d-1ecf340aa596",
+      "Type": "GetCalculatedAttributesForCustomerProfile",
+      "Transitions": {
+        "NextAction": "System attributes",
+        "Errors": [
+          {
+            "NextAction": "System attributes",
+            "ErrorType": "NoMatchingError"
+          },
+          {
+            "NextAction": "System attributes",
+            "ErrorType": "NoneFoundError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ProfileRequestData": {
+          "FirstName": "$.CustomerEndpoint.Address",
+          "PhoneNumber": "$.CustomerEndpoint.Address"
+        },
+        "ProfileResponseData": []
+      },
+      "Identifier": "9833ec72-a5eb-404d-906e-3153aa12289c",
+      "Type": "CreateCustomerProfile",
+      "Transitions": {
+        "NextAction": "32650649-ad04-4fd3-9b6d-1ecf340aa596",
+        "Errors": [
+          {
+            "NextAction": "32650649-ad04-4fd3-9b6d-1ecf340aa596",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    }
+  ]
+}

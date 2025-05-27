@@ -27,8 +27,8 @@ tab1_button = st.checkbox('Deploy IVR Flow', value=True, disabled=True)
 tab2_button = st.checkbox('Deploy Survey Flow')
 tab3_button = st.checkbox('Deploy Screen Flow')
 
-tab1, tab2, tab3 = st.tabs(
-    ["IVR Flow", "Survey Flow", "Screen Flow"])
+tab1, tab2 = st.tabs(
+    ["IVR Flow", "Survey Flow"])
 
 if tab1_button:
     with tab1:
@@ -110,12 +110,6 @@ if tab2_button:
 
                     st.success("Survey message have been updated")
 
-
-if tab3_button:
-    with tab3:
-        with st.expander("Screen Configuration", expanded=True):
-            uploaded_screen_file = st.file_uploader(
-                "Choose a Json file of Screen Fields", accept_multiple_files=False, type="json")
 
 # add connect agents
 with st.expander("Agent Configuration", expanded=True):
@@ -382,6 +376,26 @@ class ConnectCdkVoiceChannelStack(Stack):
                                                              type="CONTACT_FLOW"
                                                              )
 
+        # load contact flow - ScreenPop
+        if os.path.exists('screenpop_message.json'):
+            with open('screenpop_message.json') as f:
+                message_data = json.load(f)
+
+            with open('examples/flows/screenpop__message_flow/screenpop__message_flow.json') as f:
+                flow_data = json.load(f)
+                flow_content = json.dumps(flow_data)
+                with open('connect_flow_screenpop_updated.json', 'w') as f:
+                    f.write(flow_content)
+
+            cfn_contact_flow_screenpop = connect.CfnContactFlow(self, "CfnContactFlowScreenPop"+formatted_now,
+                                                             content=flow_content,
+                                                             instance_arn=connect_instance_arn,
+                                                             description="ScreenPop flow created using cfn",
+                                                             name=os.environ["tenant_name"] +
+                                                             " ScreenPop Flow",
+                                                             type="CONTACT_FLOW"
+                                                             )
+            
         # define routing profile
         cfn_routing_profile = connect.CfnRoutingProfile(self, "CfnRoutingProfile"+formatted_now,
                                                         default_outbound_queue_arn=cfn_queue.attr_queue_arn,
