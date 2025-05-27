@@ -13,7 +13,9 @@ import pandas as pd
 import boto3
 import time
 import json
+import shutil
 from datetime import datetime
+
 
 
 st.set_page_config(
@@ -27,10 +29,12 @@ tab1_button = st.checkbox('Deploy IVR Flow', value=True, disabled=True)
 tab2_button = st.checkbox('Deploy Survey Flow')
 tab3_button = st.checkbox('Deploy Screen Flow')
 
+
 tab1, tab2 = st.tabs(
     ["IVR Flow", "Survey Flow"])
 
 if tab1_button:
+    shutil.copyfile('examples/flows/welcome_message_flow/welcome_message_flow.json', 'welcome_message_flow.json')
     with tab1:
         # ivr configuration
         with st.expander("IVR Configuration", expanded=True):
@@ -84,6 +88,7 @@ if tab1_button:
 
 
 if tab2_button:
+    shutil.copyfile('examples/flows/survey_message_flow/survey_message_flow.json', 'survey_message_flow.json')
     with tab2:
         with st.expander("Survey Configuration", expanded=True):
              # Load survey messages directly from file
@@ -109,8 +114,18 @@ if tab2_button:
                         json.dump(updated_survey_data, f)
 
                     st.success("Survey message have been updated")
+else:
+    if os.path.exists('survey_message_flow.json'):
+        os.remove('survey_message_flow.json')
+    if os.path.exists('survey_message.json'):
+        os.remove('survey_message.json')
 
-
+if tab3_button:
+    shutil.copyfile('examples/flows/screenpop_message_flow/screenpop_message_flow.json', 'screenpop_message_flow.json')
+else:
+    if os.path.exists('screenpop_message_flow.json'):
+        os.remove('screenpop_message_flow.json')
+    
 # add connect agents
 with st.expander("Agent Configuration", expanded=True):
     uploaded_file = st.file_uploader(
@@ -321,7 +336,7 @@ class ConnectCdkVoiceChannelStack(Stack):
             os.environ["ivr_error_message"] = message_data['errorMessage']
 
         # load contact flow - IVR
-        with open('examples/flows/welcome_message_flow/welcome_message_flow.json') as f:
+        with open('welcome_message_flow.json') as f:
             flow_data = json.load(f)
             flow_content = json.dumps(flow_data)
             flow_content = flow_content.replace(
@@ -357,7 +372,7 @@ class ConnectCdkVoiceChannelStack(Stack):
                 os.environ["survey_message"] = message_data['surveyMessage']
                 os.environ["survey_message_feedback"] = message_data['surveyMessageFeedback']
 
-            with open('examples/flows/survey_message_flow/survey_message_flow.json') as f:
+            with open('survey_message_flow.json') as f:
                 flow_data = json.load(f)
                 flow_content = json.dumps(flow_data)
                 flow_content = flow_content.replace(
@@ -377,11 +392,8 @@ class ConnectCdkVoiceChannelStack(Stack):
                                                              )
 
         # load contact flow - ScreenPop
-        if os.path.exists('screenpop_message.json'):
-            with open('screenpop_message.json') as f:
-                message_data = json.load(f)
-
-            with open('examples/flows/screenpop__message_flow/screenpop__message_flow.json') as f:
+        if os.path.exists('screenpop_message_flow.json'):
+            with open('screenpop_message_flow.json') as f:
                 flow_data = json.load(f)
                 flow_content = json.dumps(flow_data)
                 with open('connect_flow_screenpop_updated.json', 'w') as f:
