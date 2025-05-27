@@ -16,7 +16,15 @@ import json
 import shutil
 from datetime import datetime
 
-
+def create_inbound_flow():
+    if tab1_button:
+        shutil.copyfile('examples/flows/welcome_message_flow/welcome_message_flow.json', 'inbound_flow.json')
+    if tab1_button and tab2_button:
+        shutil.copyfile('examples/flows/ivr_survey_flow.json', 'inbound_flow.json')
+    if tab1_button and tab3_button:
+        shutil.copyfile('examples/flows/ivr_screenpop_flow.json', 'inbound_flow.json')
+    if tab1_button and tab2_button and tab3_button:
+        shutil.copyfile('examples/flows/ivr_survey_screenpop_flow.json', 'inbound_flow.json')
 
 st.set_page_config(
     page_title="Amazon Connect Voice Channel Deployment Tool!", layout="wide")
@@ -34,7 +42,7 @@ tab1, tab2 = st.tabs(
     ["IVR Flow", "Survey Flow"])
 
 if tab1_button:
-    shutil.copyfile('examples/flows/welcome_message_flow/welcome_message_flow.json', 'welcome_message_flow.json')
+    create_inbound_flow()
     with tab1:
         # ivr configuration
         with st.expander("IVR Configuration", expanded=True):
@@ -88,7 +96,7 @@ if tab1_button:
 
 
 if tab2_button:
-    shutil.copyfile('examples/flows/survey_message_flow/survey_message_flow.json', 'survey_message_flow.json')
+    create_inbound_flow()
     with tab2:
         with st.expander("Survey Configuration", expanded=True):
              # Load survey messages directly from file
@@ -115,14 +123,17 @@ if tab2_button:
 
                     st.success("Survey message have been updated")
 else:
+    create_inbound_flow()
     if os.path.exists('survey_message_flow.json'):
         os.remove('survey_message_flow.json')
     if os.path.exists('survey_message.json'):
         os.remove('survey_message.json')
 
 if tab3_button:
+    create_inbound_flow()
     shutil.copyfile('examples/flows/screenpop_message_flow/screenpop_message_flow.json', 'screenpop_message_flow.json')
 else:
+    create_inbound_flow()
     if os.path.exists('screenpop_message_flow.json'):
         os.remove('screenpop_message_flow.json')
     
