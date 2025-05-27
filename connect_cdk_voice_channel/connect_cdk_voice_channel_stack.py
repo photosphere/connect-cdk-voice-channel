@@ -23,28 +23,6 @@ st.set_page_config(
 header = f"Amazon Connect Voice Channel Deployment Tool!"
 st.write(f"<h3 class='main-header'>{header}</h3>", unsafe_allow_html=True)
 
-# add connect agents
-with st.expander("Agent Configuration", expanded=True):
-    uploaded_file = st.file_uploader(
-        "Choose a CSV file of Agents", accept_multiple_files=False, type="csv")
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        st.write(df)
-        df.to_csv("agents.csv", index=False)
-
-
-# add hours of Operation
-with st.expander("Hours of Operation Configuration", expanded=True):
-    uploaded_file = st.file_uploader(
-        "Choose a Json file of Operation", accept_multiple_files=False, type="json")
-    if uploaded_file is not None:
-        hop_data = json.load(uploaded_file)
-        st.write("Timezone:", hop_data['timeZone'])
-        hop_df = pd.DataFrame(hop_data['timeslices'])
-        st.write(hop_df)
-        with open('hours_of_operation.json', 'w') as f:
-            json.dump(hop_data, f)
-
 tab1_button = st.checkbox('Deploy IVR Flow', value=True, disabled=True)
 tab2_button = st.checkbox('Deploy Survey Flow')
 tab3_button = st.checkbox('Deploy Screen Flow')
@@ -60,47 +38,49 @@ if tab1_button:
             # language of polly
             lan_df = pd.read_csv('examples/languages/languages_neural.csv')
             lan_vals = lan_df.iloc[:, 0].unique()
-            lan_selected = st.selectbox('IVR languages', (lan_vals))
+            default_language_index = 13  # English language as default (index 13)
+            lan_selected = st.selectbox('IVR languages', (lan_vals), index=default_language_index)
 
             lan_df['VoiceDisplay'] = lan_df['Voice'] + ','+lan_df['Gender']
             lan_filter = lan_df['LanguageName'] == lan_selected
             voice_vals = lan_df.loc[lan_filter,
                                     'VoiceDisplay'].str.replace("*", "")
-            voice_selected = st.selectbox('IVR language voices', (voice_vals))
+            default_voice_index = 0  # Danielle voice as default (index 0)
+            voice_selected = st.selectbox('IVR language voices', (voice_vals), index=default_voice_index)
             tts_voice = voice_selected.split(",")[0]
 
-            uploaded_file = st.file_uploader(
-                "Choose a Json file of IVR Messages", accept_multiple_files=False, type="json")
-            if uploaded_file is not None:
-                message_data = json.load(uploaded_file)
-                # welcome message of IVR
-                ivr_welcome_message = st.text_area(
-                    'IVR welcome message', value=message_data['welcomeMessage'])
+            # Load welcome messages directly from file
+            with open('examples/flows/welcome_message_flow/welcome_messages/ivr_messages_us.json', 'r') as f:
+                message_data = json.load(f)
+                
+            # welcome message of IVR
+            ivr_welcome_message = st.text_area(
+                'IVR welcome message', value=message_data['welcomeMessage'])
 
-                # open hour message of IVR
-                ivr_open_hour_message = st.text_area(
-                    'IVR open hour message', value=message_data['openHourMessage'])
+            # open hour message of IVR
+            ivr_open_hour_message = st.text_area(
+                'IVR open hour message', value=message_data['openHourMessage'])
 
-                # error message of IVR
-                ivr_error_message = st.text_area(
-                    'IVR error message', value=message_data['errorMessage'])
+            # error message of IVR
+            ivr_error_message = st.text_area(
+                'IVR error message', value=message_data['errorMessage'])
+
+            with open('ivr_messages.json', 'w') as f:
+                json.dump(message_data, f)
+
+            # update
+            save_button = st.button('Update IVR Messages')
+            if save_button:
+                updated_message_data = {
+                    "welcomeMessage": ivr_welcome_message,
+                    "openHourMessage": ivr_open_hour_message,
+                    "errorMessage": ivr_error_message
+                }
 
                 with open('ivr_messages.json', 'w') as f:
-                    json.dump(message_data, f)
+                    json.dump(updated_message_data, f)
 
-                # update
-                save_button = st.button('Update IVR Messages')
-                if save_button:
-                    updated_message_data = {
-                        "welcomeMessage": ivr_welcome_message,
-                        "openHourMessage": ivr_open_hour_message,
-                        "errorMessage": ivr_error_message
-                    }
-
-                    with open('ivr_messages.json', 'w') as f:
-                        json.dump(updated_message_data, f)
-
-                    st.success("IVR messages have been updated")
+                st.success("IVR messages have been updated")
 
 
 if tab2_button:
@@ -138,6 +118,28 @@ if tab3_button:
             uploaded_screen_file = st.file_uploader(
                 "Choose a Json file of Screen Fields", accept_multiple_files=False, type="json")
 
+# add connect agents
+with st.expander("Agent Configuration", expanded=True):
+    uploaded_file = st.file_uploader(
+        "Choose a CSV file of Agents", accept_multiple_files=False, type="csv")
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.write(df)
+        df.to_csv("agents.csv", index=False)
+
+
+# add hours of Operation
+with st.expander("Hours of Operation Configuration", expanded=True):
+    uploaded_file = st.file_uploader(
+        "Choose a Json file of Operation", accept_multiple_files=False, type="json")
+    if uploaded_file is not None:
+        hop_data = json.load(uploaded_file)
+        st.write("Timezone:", hop_data['timeZone'])
+        hop_df = pd.DataFrame(hop_data['timeslices'])
+        st.write(hop_df)
+        with open('hours_of_operation.json', 'w') as f:
+            json.dump(hop_data, f)
+            
 with st.sidebar:
     # connect instance configuration
     st.subheader('Connect Parameters', divider="rainbow")
