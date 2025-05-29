@@ -17,6 +17,8 @@ import shutil
 from datetime import datetime
 
 def create_inbound_flow():
+    shutil.copyfile('examples/agents/agents.csv', 'agents.csv')
+    shutil.copyfile('examples/hoursofoperation/hours_of_operation_us.json', 'hours_of_operation.json')
     if tab1_button:
         shutil.copyfile('examples/flows/welcome_message_flow/welcome_message_flow.json', 'inbound_flow.json')
     if tab1_button and tab2_button:
@@ -163,7 +165,12 @@ with st.sidebar:
     st.subheader('Connect Parameters', divider="rainbow")
 
     # connect configuration
-    connect_instance_id = st.text_input('Connect Instance Id')
+    default_connect_instance_id=''
+    if os.path.exists('connect.json'):
+            with open('connect.json') as f:
+                json_data = json.load(f)
+                default_connect_instance_id = json_data['Id']
+    connect_instance_id = st.text_input('Connect Instance Id',default_connect_instance_id)
 
     # load env
     if st.button('Load Configuration'):
@@ -337,44 +344,24 @@ class ConnectCdkVoiceChannelStack(Stack):
                                      description="Queue created using cfn",
                                      name=os.environ["tenant_name"]+" Queue"
                                      )
+        
+        # load contact flow - ScreenPop
+        if os.path.exists('screenpop_message_flow.json'):
+            with open('screenpop_message_flow.json') as f:
+                flow_data = json.load(f)
+                flow_content = json.dumps(flow_data)
+                with open('connect_flow_screenpop_updated.json', 'w') as f:
+                    f.write(flow_content)
 
-        # define IVR
-        with open('ivr_messages.json') as f:
-            message_data = json.load(f)
-            os.environ["ivr_welcome_message"] = message_data['welcomeMessage']
-            os.environ["ivr_open_hour_message"] = message_data['openHourMessage']
-            os.environ["ivr_error_message"] = message_data['errorMessage']
-
-        # load contact flow - IVR
-        with open('welcome_message_flow.json') as f:
-            flow_data = json.load(f)
-            flow_content = json.dumps(flow_data)
-            flow_content = flow_content.replace(
-                "contact_queue_name", os.environ["tenant_name"]+" Queue")
-            flow_content = flow_content.replace(
-                "contact_name", os.environ["tenant_name"])
-            flow_content = flow_content.replace(
-                "Joanna", os.environ["tts_voice"])
-            flow_content = flow_content.replace(
-                "welcome-message", os.environ["ivr_welcome_message"])
-            flow_content = flow_content.replace(
-                "open-hour-message", os.environ["ivr_open_hour_message"])
-            flow_content = flow_content.replace(
-                "error-message", os.environ["ivr_error_message"])
-            flow_content = flow_content.replace(
-                "queue-arn", cfn_queue.attr_queue_arn)
-            with open('connect_flow_ivr_updated.json', 'w') as f:
-                f.write(flow_content)
-
-        cfn_contact_flow_ivr = connect.CfnContactFlow(self, "CfnContactFlowIVR"+formatted_now,
-                                                      content=flow_content,
-                                                      instance_arn=connect_instance_arn,
-                                                      description="IVR flow created using cfn",
-                                                      name=os.environ["tenant_name"] +
-                                                      " Inbound Flow",
-                                                      type="CONTACT_FLOW"
-                                                      )
-
+            cfn_contact_flow_screenpop = connect.CfnContactFlow(self, "CfnContactFlowScreenPop"+formatted_now,
+                                                             content=flow_content,
+                                                             instance_arn=connect_instance_arn,
+                                                             description="ScreenPop flow created using cfn",
+                                                             name=os.environ["tenant_name"] +
+                                                             " ScreenPop Flow",
+                                                             type="CONTACT_FLOW"
+                                                             )
+            
         # load contact flow - Survey
         if os.path.exists('survey_message.json'):
             with open('survey_message.json') as f:
@@ -400,23 +387,58 @@ class ConnectCdkVoiceChannelStack(Stack):
                                                              " Survey Flow",
                                                              type="CONTACT_FLOW"
                                                              )
+            
+        # define IVR
+        with open('ivr_messages.json') as f:
+            message_data = json.load(f)
+            os.environ["ivr_welcome_message"] = message_data['welcomeMessage']
+            os.environ["ivr_open_hour_message"] = message_data['openHourMessage']
+            os.environ["ivr_error_message"] = message_data['errorMessage']
+        
+        
+        # load contact flow - IVR
+        with open('inbound_flow.json') as f:
+            flow_data = json.load(f)
+            flow_content = json.dumps(flow_data)
+            flow_content = flow_content.replace(
+                "contact_queue_name", os.environ["tenant_name"]+" Queue")
+            flow_content = flow_content.replace(
+                "contact_name", os.environ["tenant_name"])
+            flow_content = flow_content.replace(
+                "Joanna", os.environ["tts_voice"])
+            flow_content = flow_content.replace(
+                "welcome-message", os.environ["ivr_welcome_message"])
+            flow_content = flow_content.replace(
+                "open-hour-message", os.environ["ivr_open_hour_message"])
+            flow_content = flow_content.replace(
+                "error-message", os.environ["ivr_error_message"])
+            flow_content = flow_content.replace(
+                "queue-arn", cfn_queue.attr_queue_arn)
+            
+            if os.path.exists('screenpop_message_flow.json'):
+                flow_content = flow_content.replace(
+                "contact_screenpop_flow_name", cfn_contact_flow_screenpop.name)
+            
+            if os.path.exists('survey_message.json'):
+                flow_content = flow_content.replace(
+                "contact_survey_flow_name", cfn_contact_flow_survey.name)
+                flow_content = flow_content.replace(
+                "contact_survey_flow_id", cfn_contact_flow_survey.attr_contact_flow_arn)
+                    
+            with open('connect_flow_ivr_updated.json', 'w') as f:
+                f.write(flow_content)
 
-        # load contact flow - ScreenPop
-        if os.path.exists('screenpop_message_flow.json'):
-            with open('screenpop_message_flow.json') as f:
-                flow_data = json.load(f)
-                flow_content = json.dumps(flow_data)
-                with open('connect_flow_screenpop_updated.json', 'w') as f:
-                    f.write(flow_content)
+        cfn_contact_flow_ivr = connect.CfnContactFlow(self, "CfnContactFlowIVR"+formatted_now,
+                                                      content=flow_content,
+                                                      instance_arn=connect_instance_arn,
+                                                      description="IVR flow created using cfn",
+                                                      name=os.environ["tenant_name"] +
+                                                      " Inbound Flow",
+                                                      type="CONTACT_FLOW"
+                                                      )
 
-            cfn_contact_flow_screenpop = connect.CfnContactFlow(self, "CfnContactFlowScreenPop"+formatted_now,
-                                                             content=flow_content,
-                                                             instance_arn=connect_instance_arn,
-                                                             description="ScreenPop flow created using cfn",
-                                                             name=os.environ["tenant_name"] +
-                                                             " ScreenPop Flow",
-                                                             type="CONTACT_FLOW"
-                                                             )
+
+
             
         # define routing profile
         cfn_routing_profile = connect.CfnRoutingProfile(self, "CfnRoutingProfile"+formatted_now,
