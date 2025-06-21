@@ -128,15 +128,6 @@ if tab2_button:
                         json.dump(updated_survey_data, f)
 
                     st.success("Survey message have been updated")
-else:
-    if os.path.exists('survey_message_flow.json'):
-        os.remove('survey_message_flow.json')
-    if os.path.exists('survey_message.json'):
-        os.remove('survey_message.json')
-
-if not tab3_button:
-    if os.path.exists('screenpop_message_flow.json'):
-        os.remove('screenpop_message_flow.json')
     
 # add connect agents
 with st.expander("Agent Configuration", expanded=True):
@@ -223,6 +214,20 @@ with st.sidebar:
         os.environ["tenant_name"] = tenant_name
         os.environ["tenant_description"] = tenant_description
         os.environ["tts_voice"] = tts_voice
+        os.environ["deploy_survey_flow"] = str(tab2_button)
+        os.environ["deploy_screen_flow"] = str(tab3_button)
+        
+        config_data = {
+            "tenant_name": os.environ["tenant_name"],
+            "tenant_description": os.environ["tenant_description"],
+            "tts_voice": os.environ["tts_voice"],
+            "deploy_survey_flow": os.environ["deploy_survey_flow"],
+            "deploy_screen_flow": os.environ["deploy_screen_flow"]
+        }
+        
+        with open('environment_config.json', 'w') as f:
+            json.dump(config_data, f, indent=2)
+        
         st.success("ENV has been set")
 
     # deploy cdk
@@ -305,6 +310,20 @@ class ConnectCdkVoiceChannelStack(Stack):
         now = datetime.now()
         formatted_now = now.strftime("%Y%m%d%H%M%S")
 
+        with open('environment_config.json') as f:
+            os_data = json.load(f)
+            deploy_survey_flow = os_data['deploy_survey_flow']
+            deploy_screen_flow = os_data['deploy_screen_flow']
+            if(deploy_survey_flow == 'False'):
+                if os.path.exists('survey_message_flow.json'):
+                    os.remove('survey_message_flow.json')
+                if os.path.exists('survey_message.json'):
+                    os.remove('survey_message.json')
+            if(deploy_screen_flow == 'False'):
+                if os.path.exists('screenpop_message_flow.json'):
+                    os.remove('screenpop_message_flow.json')
+                
+        
         # load hours of operation
         with open('hours_of_operation.json') as f:
             hop_data = json.load(f)
