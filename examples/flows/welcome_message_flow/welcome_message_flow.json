@@ -165,7 +165,8 @@
                     "RecordedParticipants": [
                         "Agent",
                         "Customer"
-                    ]
+                    ],
+                    "IVRRecordingBehavior": "Enabled"
                 }
             },
             "Identifier": "825834cf-1a19-4833-ba4b-44bd2dcfca86",
