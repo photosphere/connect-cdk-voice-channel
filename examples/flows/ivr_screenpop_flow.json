@@ -76,6 +76,9 @@
           "QueueId": {
             "displayName": "contact_queue_name"
           }
+        },
+        "queue": {
+          "text": "contact_queue_name"
         }
       },
       "eccce5f7-14e6-449e-91a1-79aab2bfb178": {
@@ -112,10 +115,10 @@
       }
     },
     "Annotations": [],
-    "name": "ivr_survey_flow",
+    "name": "contact_name Inbound Flow",
     "description": "Flow created using cfn",
     "type": "contactFlow",
-    "status": "SAVED",
+    "status": "published",
     "hash": {}
   },
   "Actions": [
@@ -272,7 +275,7 @@
     },
     {
       "Parameters": {
-        "QueueId": ""
+        "QueueId": "queue-arn"
       },
       "Identifier": "2c1bb3e4-d5ba-401e-b698-d6a26573c7b3",
       "Type": "UpdateContactTargetQueue",
