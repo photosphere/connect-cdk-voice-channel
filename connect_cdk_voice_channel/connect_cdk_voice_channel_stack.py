@@ -468,8 +468,8 @@ def create_ivr_contact_flow(cfn_queue, cfn_contact_flow_screenpop=None, cfn_cont
     # 条件替换
     if cfn_contact_flow_screenpop and os.path.exists('screenpop_message_flow.json'):
         screenpop_replacements = {
-            "contact_screenpop_flow_name": cfn_contact_flow_survey.name,
-            "contact_screenpop_flow_id": cfn_contact_flow_survey.attr_contact_flow_arn
+            "contact_screenpop_flow_name": cfn_contact_flow_screenpop.name,
+            "contact_screenpop_flow_id": cfn_contact_flow_screenpop.attr_contact_flow_arn
         }
         for old_text, new_text in screenpop_replacements.items():
             flow_content = flow_content.replace(old_text, new_text)
