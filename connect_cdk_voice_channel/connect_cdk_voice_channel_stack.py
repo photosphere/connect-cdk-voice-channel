@@ -389,13 +389,23 @@ def load_flows():
     create_inbound_flow(
         True, eval(os_data['deploy_survey_flow']), eval(os_data['deploy_screen_flow']))
 
+def get_arn_prefix(arn):
+    return arn.rsplit(':', 2)[0]
 
-def create_contact_flow(self, file_path, output_file, flow_name, description, connect_instance_arn, formatted_now):
+def create_screenpop_contact_flow(self, file_path, output_file, flow_name, description, connect_instance_arn, formatted_now):
     """创建联系流程的通用函数"""
     if os.path.exists(file_path):
         flow_data = load_json_file(file_path)
         flow_content = json.dumps(flow_data)
 
+        # 替换消息内容
+        replacements = {
+            "arn_prefix": get_arn_prefix(connect_instance_arn)
+        }
+
+        for old_text, new_text in replacements.items():
+            flow_content = flow_content.replace(old_text, new_text)
+            
         with open(output_file, 'w') as f:
             f.write(flow_content)
 
@@ -575,7 +585,7 @@ class ConnectCdkVoiceChannelStack(Stack):
         flows = {}
 
         # ScreenPop流程
-        flows['screenpop'] = create_contact_flow(
+        flows['screenpop'] = create_screenpop_contact_flow(
             self, 'screenpop_message_flow.json', 'connect_flow_screenpop_updated.json',
             'ScreenPop Flow', 'ScreenPop flow created using cfn',
             config['connect_instance_arn'], config['timestamp']

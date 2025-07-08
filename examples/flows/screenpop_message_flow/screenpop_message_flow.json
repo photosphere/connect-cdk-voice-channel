@@ -225,7 +225,7 @@
     {
       "Parameters": {
         "ViewResource": {
-          "Id": "arn:aws:connect:us-east-1:aws:view/detail:1"
+          "Id": "arn_prefix:aws:view/detail:1"
         },
         "InvocationTimeLimitSeconds": "900",
         "ViewData": {
