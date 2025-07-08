@@ -167,14 +167,36 @@ def load_connect_configuration(connect_client, connect_instance_id):
         res = connect_client.list_security_profiles(
             InstanceId=connect_instance_id)
         security_profile_arn_val = None
+        security_profile_id = None
 
         for item in res['SecurityProfileSummaryList']:
             if item['Name'] == 'Agent':
                 security_profile_arn_val = item['Arn']
+                security_profile_id = item['Id']
                 item_filtered = {k: v for k, v in item.items() if k in [
                     'Id', 'Arn', 'Name']}
                 save_json_file(item_filtered, 'security_profile.json')
                 break
+
+        # 更新Agent安全配置文件权限
+        if security_profile_id:
+            additional_permissions = [
+                'BasicAgentAccess',
+                'OutboundCallAccess',
+                'CustomerProfiles.Create',
+                'CustomerProfiles.Edit', 
+                'CustomerProfiles.View',
+                'CustomViews.Access'
+            ]
+            
+            try:
+                connect_client.update_security_profile(
+                    SecurityProfileId=security_profile_id,
+                    InstanceId=connect_instance_id,
+                    Permissions=additional_permissions
+                )
+            except Exception as perm_error:
+                st.warning(f"Failed to update security profile permissions: {perm_error}")
 
         # 显示配置信息
         st.text_input('Amazon Connect instance ARN',
