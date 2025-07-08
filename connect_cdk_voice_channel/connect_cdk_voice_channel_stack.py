@@ -479,7 +479,7 @@ def create_ivr_contact_flow(cfn_queue, cfn_contact_flow_screenpop=None, cfn_cont
         for old_text, new_text in survey_replacements.items():
             flow_content = flow_content.replace(old_text, new_text)
 
-    with open('connect_flow_ivr_updated.json', 'w') as f:
+    with open('inbound_flow_updated.json', 'w') as f:
         f.write(flow_content)
 
     return flow_content
