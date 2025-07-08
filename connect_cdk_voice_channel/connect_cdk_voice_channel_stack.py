@@ -478,7 +478,7 @@ class ConnectCdkVoiceChannelStack(Stack):
 
             # 创建联系流程
             contact_flows = self._create_contact_flows(config)
-            # ivr_flow = self._create_ivr_flow(config, queue, contact_flows)
+            ivr_flow = self._create_ivr_flow(config, queue, contact_flows)
 
             # 创建路由配置文件
             routing_profile = self._create_routing_profile(config, queue)
