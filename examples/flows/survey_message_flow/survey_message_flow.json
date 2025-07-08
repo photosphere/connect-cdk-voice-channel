@@ -97,7 +97,7 @@
     "Actions": [
         {
             "Parameters": {
-                "Text": "survey-message-feedback"
+                "Text": "survey_feedback"
             },
             "Identifier": "bc8599cd-5e27-42d8-9ead-87ca804c2ab1",
             "Type": "MessageParticipant",
@@ -260,7 +260,7 @@
             "Parameters": {
                 "FlowAttributes": {
                     "welcome-msg": {
-                        "Value": "survey-message"
+                        "Value": "survey_message"
                     }
                 }
             },

@@ -434,7 +434,7 @@ def create_survey_contact_flow(self, connect_instance_arn, formatted_now):
         # 替换消息内容
         replacements = {
             "survey_message": os.environ["survey_message"],
-            "survey_message_feedback": os.environ["survey_message_feedback"]
+            "survey_feedback": os.environ["survey_message_feedback"]
         }
 
         for old_text, new_text in replacements.items():
