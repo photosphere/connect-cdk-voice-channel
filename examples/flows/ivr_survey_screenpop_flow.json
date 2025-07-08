@@ -331,7 +331,7 @@
     {
       "Parameters": {
         "EventHooks": {
-          "DefaultAgentUI": "arn:aws:connect:us-east-1:991727053196:instance/b7e4b4ed-1bdf-4b14-b624-d9328f08725a/contact-flow/16aadebc-8791-4d07-9f31-05404ebbe5fa"
+          "DefaultAgentUI": "contact_screenpop_flow_id"
         }
       },
       "Identifier": "5fccbc3f-e853-4177-a10a-5e5926a1be37",
@@ -365,7 +365,7 @@
     {
       "Parameters": {
         "EventHooks": {
-          "CustomerRemaining": "arn:aws:connect:us-east-1:991727053196:instance/b7e4b4ed-1bdf-4b14-b624-d9328f08725a/contact-flow/2a4bf7fe-eaeb-4cdb-b7e9-85cfe0a42a86"
+          "CustomerRemaining": "contact_survey_flow_id"
         }
       },
       "Identifier": "50724d0b-8013-4338-b5e4-f5f4a8ea9430",

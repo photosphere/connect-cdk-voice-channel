@@ -330,7 +330,7 @@
     {
       "Parameters": {
         "EventHooks": {
-          "DefaultAgentUI": "arn:aws:connect:us-east-1:991727053196:instance/b7e4b4ed-1bdf-4b14-b624-d9328f08725a/contact-flow/16aadebc-8791-4d07-9f31-05404ebbe5fa"
+          "DefaultAgentUI": "contact_screenpop_flow_id"
         }
       },
       "Identifier": "5fccbc3f-e853-4177-a10a-5e5926a1be37",
