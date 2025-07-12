@@ -206,7 +206,9 @@
           "QueueName": "BasicQueue",
           "Language": "$.LanguageCode",
           "HotlineNumber": "$.SystemEndpoint.Address",
-          "NewCustomer": "$.Customer.CalculatedAttributes._new_customer"
+          "NewCustomer": "$.Customer.CalculatedAttributes._new_customer",
+          "MostFrequentChannel": "$.Customer.CalculatedAttributes._most_frequent_channel",
+          "FrequentCaller": "$.Customer.CalculatedAttributes._frequent_caller"
         },
         "TargetContact": "Current"
       },
@@ -253,7 +255,7 @@
           ],
           "Sections": [
             {
-              "TemplateString": "<table cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);'> <thead> <tr style='background-color: #327194; color: #fff;'> <th colspan='3' style='text-align: left; padding: 10px;'>Contact</th> </tr> </thead> <tbody> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>Hotline Number</th> <th style='text-align: left;'>Queue</th> <th style='text-align: left;'>Language</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.HotlineNumber</td> <td style='vertical-align: middle;'>$.Attributes.QueueName</td> <td style='vertical-align: middle;'>$.Attributes.Language</td> </tr> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>Customer</th> <th style='text-align: left;'>Phone</th> <th style='text-align: left;'>Email</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.CustomerFullName</td> <td style='vertical-align: middle;'>$.Attributes.CustomerPhoneNumber</td> <td style='vertical-align: middle;'>$.Attributes.CustomerEmail</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>New Customer</th> <th style='text-align: left;'>Last Channel</th> <th style='text-align: left;'>Last Agent ID</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.NewCustomer</td> <td style='vertical-align: middle;'>$.Attributes.LastChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastAgentID</td> </tr></tbody> </table>"
+              "TemplateString": "<table cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);'> <thead> <tr style='background-color: #327194; color: #fff;'> <th colspan='3' style='text-align: left; padding: 10px;'>Contact</th> </tr> </thead> <tbody> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>Hotline Number</th> <th style='text-align: left;'>Queue</th> <th style='text-align: left;'>Language</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.HotlineNumber</td> <td style='vertical-align: middle;'>$.Attributes.QueueName</td> <td style='vertical-align: middle;'>$.Attributes.Language</td> </tr> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>Customer</th> <th style='text-align: left;'>Phone</th> <th style='text-align: left;'>Email</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.CustomerFullName</td> <td style='vertical-align: middle;'>$.Attributes.CustomerPhoneNumber</td> <td style='vertical-align: middle;'>$.Attributes.CustomerEmail</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>Most Frequent Channel</th> <th style='text-align: left;'>Last Channel</th> <th style='text-align: left;'>Last Agent ID</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.MostFrequentChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastAgentID</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>New Customer</th> <th style='text-align: left;'>Frequent Caller</th> <th style='text-align: left;'></th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.NewCustomer</td> <td style='vertical-align: middle;'>$.Attributes.FrequentCaller</td> <td style='vertical-align: middle;'></td> </tr></tbody> </table>"
             }
           ]
         }
@@ -339,7 +341,9 @@
         "ProfileResponseData": [
           "CalculatedAttributes._last_agent_id",
           "CalculatedAttributes._last_channel",
-          "CalculatedAttributes._new_customer"
+          "CalculatedAttributes._new_customer",
+          "CalculatedAttributes._most_frequent_channel",
+          "CalculatedAttributes._frequent_caller"
         ]
       },
       "Identifier": "32650649-ad04-4fd3-9b6d-1ecf340aa596",
