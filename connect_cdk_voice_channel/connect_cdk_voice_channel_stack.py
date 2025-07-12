@@ -543,7 +543,7 @@ class ConnectCdkVoiceChannelStack(Stack):
     def _create_hours_of_operation(self, config):
         """创建营业时间配置"""
         if not os.path.exists('hours_of_operation.json'):
-            copy_file('examples/hoursofoperation/hours_of_operation_us.json',
+            copy_file('examples/hoursofoperation/hours_of_operation_hk.json',
                       'hours_of_operation.json')
 
         hop_data = load_json_file('hours_of_operation.json')
