@@ -9,6 +9,7 @@ from aws_cdk import aws_connect as connect
 import os
 import subprocess
 import streamlit as st
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 import pandas as pd
 import boto3
 import time
@@ -198,11 +199,12 @@ def load_connect_configuration(connect_client, connect_instance_id):
             except Exception as perm_error:
                 st.warning(f"Failed to update security profile permissions: {perm_error}")
 
-        # 显示配置信息
-        st.text_input('Amazon Connect instance ARN',
-                      value=connect_instance_arn_val)
-        st.text_input('Security profile ARN (Agent Role)',
-                      value=security_profile_arn_val)
+        # 保存ARN值到session state
+        if 'connect_instance_arn' not in st.session_state:
+            st.session_state['connect_instance_arn'] = connect_instance_arn_val
+        if 'security_profile_arn' not in st.session_state:
+            st.session_state['security_profile_arn'] = security_profile_arn_val
+            
         st.success("Connect instance has been loaded")
 
     except Exception as e:
@@ -226,7 +228,7 @@ def save_environment_configuration(tenant_name, tenant_description, tts_voice, t
 
     # 保存配置文件
     save_json_file(config_data, 'environment_config.json')
-    st.success("ENV has been set")
+   
 
 
 def monitor_stack_status(cfm_client, stack_name, operation_type):
@@ -342,6 +344,16 @@ with st.sidebar:
     if st.button('Load Configuration'):
         connect_client = boto3.client("connect")
         load_connect_configuration(connect_client, connect_instance_id)
+    
+    # 显示ARN值（从session state获取）
+    if 'connect_instance_arn' in st.session_state:
+        st.text_input('Amazon Connect instance ARN',
+                      value=st.session_state['connect_instance_arn'],
+                      disabled=True)
+    if 'security_profile_arn' in st.session_state:
+        st.text_input('Security profile ARN (Agent Role)',
+                      value=st.session_state['security_profile_arn'],
+                      disabled=True)
 
     # tenant configuration
     tenant_name = st.text_input('Tenant Name (Required)')
@@ -349,10 +361,43 @@ with st.sidebar:
     st.write('*You must click follow button to load and save configuration*')
 
     # save env
-    if st.button('Save Configuration'):
-        save_environment_configuration(
-            tenant_name, tenant_description, tts_voice, tab2_button, tab3_button)
+    col1, col2 = st.columns(2)
+    with col1:
+        btn_Save=st.button('Save')
+        if btn_Save:
+            save_environment_configuration(
+                tenant_name, tenant_description, tts_voice, tab2_button, tab3_button)
+    
+    with col2:
+        btn_Clear=st.button('Clear')
+        if btn_Clear:
+            files_to_remove = [
+                'environment_config.json',
+                'hours_of_operation.json',
+                'inbound_flow_updated.json',
+                'inbound_flow.json',
+                'ivr_messages.json',
+                'security_profile.json'
+            ]
+            
+            for file_path in files_to_remove:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    
+            # 清除session state中的ARN值
+            if 'connect_instance_arn' in st.session_state:
+                del st.session_state['connect_instance_arn']
+            if 'security_profile_arn' in st.session_state:
+                del st.session_state['security_profile_arn']
+                
+            st.success('Configuration files have been cleared')
+            st.experimental_rerun()
 
+    if(btn_Save):
+        st.success('Configuration have been saved')
+    if(btn_Clear):
+        st.success('Configuration have been cleared')
+    
     # deploy cdk
     st.subheader('CDK Deployment', divider="rainbow")
     if st.button('Deploy CDK Stack'):
