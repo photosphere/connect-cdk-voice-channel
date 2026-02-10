@@ -531,13 +531,64 @@ def cleanup():
 def destroy():
     """销毁已部署的 CDK Stack"""
     tenant_name = prompt_input("请输入要销毁的租户名称 (Stack Name)")
-    os.environ["tenant_name"] = tenant_name
-    os.environ["tenant_description"] = ""
 
     print(f"\n  ⚠ 即将销毁 Stack: {tenant_name}")
     if not prompt_yes_no("  确认销毁?", "n"):
         print("  已取消。")
         return
+
+    # CDK destroy 仍会加载 app.py → Stack，Stack 内部代码读取多个环境变量。
+    # 这里需要把所有必需的环境变量都设上占位值，否则 KeyError 会导致 synth 失败。
+    os.environ["tenant_name"] = tenant_name
+    os.environ["tenant_description"] = ""
+    os.environ["tts_voice"] = "Joanna"
+    os.environ["deploy_survey_flow"] = "False"
+    os.environ["deploy_screen_flow"] = "False"
+    os.environ["ivr_welcome_message"] = ""
+    os.environ["ivr_open_hour_message"] = ""
+    os.environ["ivr_error_message"] = ""
+    os.environ["survey_message"] = ""
+    os.environ["survey_message_feedback"] = ""
+
+    # Stack 初始化还会读取 connect.json / security_profile.json / hours_of_operation.json 等文件。
+    # 如果本地已被清理，需要生成占位文件让 synth 能跑通。
+    placeholder_files = {
+        "connect.json": {"Id": "placeholder", "Arn": "arn:aws:connect:us-east-1:000000000000:instance/placeholder"},
+        "security_profile.json": {"Id": "placeholder", "Arn": "arn:aws:connect:us-east-1:000000000000:instance/placeholder/security-profile/placeholder", "Name": "Agent"},
+        "environment_config.json": {
+            "tenant_name": tenant_name,
+            "tenant_description": "",
+            "tts_voice": "Joanna",
+            "deploy_survey_flow": "False",
+            "deploy_screen_flow": "False",
+        },
+    }
+
+    created_placeholders = []
+    for fname, content in placeholder_files.items():
+        if not os.path.exists(fname):
+            save_json(content, fname)
+            created_placeholders.append(fname)
+
+    if not os.path.exists("hours_of_operation.json"):
+        hop_default = os.path.join(HOP_DIR, "hours_of_operation_us.json")
+        if os.path.exists(hop_default):
+            copy_file(hop_default, "hours_of_operation.json")
+            created_placeholders.append("hours_of_operation.json")
+
+    # 确保 inbound_flow.json 存在（Stack 初始化时 load_flows() 会写入，但以防万一）
+    if not os.path.exists("inbound_flow.json"):
+        default_flow = os.path.join(FLOWS_DIR, "welcome_message_flow", "welcome_message_flow.json")
+        if os.path.exists(default_flow):
+            copy_file(default_flow, "inbound_flow.json")
+            created_placeholders.append("inbound_flow.json")
+
+    # 确保 ivr_messages.json 存在
+    if not os.path.exists("ivr_messages.json"):
+        default_msg = IVR_MESSAGES_MAP.get("us")
+        if default_msg and os.path.exists(default_msg):
+            copy_file(default_msg, "ivr_messages.json")
+            created_placeholders.append("ivr_messages.json")
 
     try:
         result = subprocess.run(
@@ -550,6 +601,11 @@ def destroy():
             print(f"\n  ✗ 销毁失败，请检查 CloudFormation 控制台。")
     except FileNotFoundError:
         print("  ✗ 未找到 cdk 命令。")
+    finally:
+        # 清理本次为 destroy 生成的占位文件
+        for fname in created_placeholders:
+            if os.path.exists(fname):
+                os.remove(fname)
 
 
 # ─── 主入口 ──────────────────────────────────────────────────────────────────
