@@ -111,12 +111,23 @@ python deploy_cli.py help       # 显示帮助信息
 
 **语言与区域的关联：**
 
-| 语言 | 区域 | IVR 消息文件 | 营业时间文件 |
-|------|------|-------------|-------------|
-| English 系列 | us | `ivr_messages_us.json` | `hours_of_operation_us.json` |
-| Chinese 系列 | hk | `ivr_messages_hk.json` | `hours_of_operation_hk.json` |
-| German 系列 | de | `ivr_messages_de.json` | `hours_of_operation_de.json` |
-| 其他语言 | us | `ivr_messages_us.json` | `hours_of_operation_us.json` |
+IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过 `language` 属性区分：
+- `examples/flows/welcome_message_flow/ivr_messages.json`
+- `examples/flows/survey_message_flow/survey_messages.json`
+
+| 语言 | language key | 营业时间文件 |
+|------|-------------|-------------|
+| English 系列 | `us` | `hours_of_operation_us.json` |
+| Chinese (Mandarin) | `cn` | `hours_of_operation_hk.json` |
+| Chinese (Cantonese) | `hk` | `hours_of_operation_hk.json` |
+| Japanese | `jp` | `hours_of_operation_us.json` |
+| Korean | `ko` | `hours_of_operation_us.json` |
+| French 系列 | `fr` | `hours_of_operation_us.json` |
+| German 系列 | `de` | `hours_of_operation_de.json` |
+| Spanish 系列 | `es` | `hours_of_operation_us.json` |
+| Arabic 系列 | `ar` | `hours_of_operation_dubai.json` |
+| Portuguese 系列 | `pt` | `hours_of_operation_us.json` |
+| Italian | `it` | `hours_of_operation_us.json` |
 
 确认语言和语音后输入 `y` 继续。
 
@@ -162,7 +173,7 @@ python deploy_cli.py help       # 显示帮助信息
 **启用后将额外部署：**
 - `survey_message_flow.json` → Survey 联系流
 - 主 IVR 流程中会添加 `CustomerRemaining` 事件钩子，指向 Survey 流
-- Survey 消息内容根据步骤 2 选择的语言自动匹配（中文/英文）
+- Survey 消息内容根据步骤 2 选择的语言自动匹配（支持 11 种语言）
 
 **评分逻辑：**
 - 按 `1` → 非常满意
@@ -218,6 +229,50 @@ python deploy_cli.py help       # 显示帮助信息
 
 ---
 
+## 消息配置文件
+
+所有语言的 IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过顶层 key 区分语言，每个语言条目包含一个 `language` 属性标识语言名称。
+
+### IVR 消息 — `examples/flows/welcome_message_flow/ivr_messages.json`
+
+```json
+{
+  "us": {
+    "language": "English",
+    "welcomeMessage": "Thanks for calling Amazon Connect. ",
+    "openHourMessage": "Thanks for calling Amazon Connect. Our office hours are ...",
+    "errorMessage": "Thanks for calling Amazon Connect. We are currently ..."
+  },
+  "cn": {
+    "language": "Chinese (Mandarin)",
+    "welcomeMessage": "感谢您的来电。...",
+    "openHourMessage": "感谢您的来电。我们的办公时间为...",
+    "errorMessage": "感谢您的来电。我们目前的通话流量很大。..."
+  }
+}
+```
+
+### Survey 消息 — `examples/flows/survey_message_flow/survey_messages.json`
+
+```json
+{
+  "us": {
+    "language": "English",
+    "surveyMessage": "Please rate your call experience from 1 to 3. ...",
+    "surveyMessageFeedback": "Thanks for your feedback. Have a good day. Bye."
+  },
+  "cn": {
+    "language": "Chinese (Mandarin)",
+    "surveyMessage": "请对我们的服务进行评价。非常满意请按1，...",
+    "surveyMessageFeedback": "感谢您的评价。祝您生活愉快，再见。"
+  }
+}
+```
+
+目前支持的 language key：`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`ar`、`pt`、`it`（共 11 种语言）。
+
+---
+
 ## 座席数据格式
 
 座席信息从 `examples/agents/agents.csv` 读取，CSV 格式如下：
@@ -265,7 +320,13 @@ python deploy_cli.py clean
 > 请确认您查看的是正确的 Connect 实例。资源名称均以您输入的租户名称为前缀。
 
 **Q: 如何自定义 IVR 消息内容**
-> 编辑 `examples/flows/welcome_message_flow/welcome_messages/` 目录下对应语言的 JSON 文件，修改 `welcomeMessage`、`openHourMessage`、`errorMessage` 字段。
+> 编辑 `examples/flows/welcome_message_flow/ivr_messages.json`，找到对应的 language key（如 `us`、`cn`、`jp`），修改其中的 `welcomeMessage`、`openHourMessage`、`errorMessage` 字段。
+
+**Q: 如何自定义 Survey 消息内容**
+> 编辑 `examples/flows/survey_message_flow/survey_messages.json`，找到对应的 language key，修改 `surveyMessage` 和 `surveyMessageFeedback` 字段。
+
+**Q: 如何添加新语言的 IVR/Survey 消息**
+> 在 `ivr_messages.json` 和 `survey_messages.json` 中新增一个 language key 及其消息内容，然后在 `deploy_cli.py` 的 `LANGUAGE_REGION_MAP` 中添加语言名称到该 key 的映射。
 
 **Q: 如何添加新的营业时间配置**
 > 在 `examples/hoursofoperation/` 目录下新建 JSON 文件，参考现有文件格式，然后在 `deploy_cli.py` 的 `HOP_REGION_MAP` 中添加映射。

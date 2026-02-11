@@ -23,35 +23,37 @@ LANGUAGES_CSV = os.path.join(EXAMPLES_DIR, "languages", "languages_neural.csv")
 FLOWS_DIR = os.path.join(EXAMPLES_DIR, "flows")
 HOP_DIR = os.path.join(EXAMPLES_DIR, "hoursofoperation")
 
-IVR_MESSAGES_MAP = {
-    "us": os.path.join(FLOWS_DIR, "welcome_message_flow", "welcome_messages", "ivr_messages_us.json"),
-    "hk": os.path.join(FLOWS_DIR, "welcome_message_flow", "welcome_messages", "ivr_messages_hk.json"),
-    "de": os.path.join(FLOWS_DIR, "welcome_message_flow", "welcome_messages", "ivr_messages_de.json"),
-}
+IVR_MESSAGES_FILE = os.path.join(FLOWS_DIR, "welcome_message_flow", "ivr_messages.json")
+SURVEY_MESSAGES_FILE = os.path.join(FLOWS_DIR, "survey_message_flow", "survey_messages.json")
 
-SURVEY_MESSAGES_MAP = {
-    "us": os.path.join(FLOWS_DIR, "survey_message_flow", "survey_messages", "survey_messages_us.json"),
-    "hk": os.path.join(FLOWS_DIR, "survey_message_flow", "survey_messages", "survey_messages_hk.json"),
-}
-
-# 语言名称到 IVR 消息/HOP 文件的映射
+# 语言名称到区域 key 的映射（用于选取 IVR/Survey 消息和营业时间文件）
 LANGUAGE_REGION_MAP = {
     "English": "us",
-    "Chinese": "hk",
+    "Chinese (Cantonese)": "hk",
+    "Chinese (Mandarin)": "cn",
+    "Chinese": "cn",
     "German": "de",
-    "Japanese": "us",   # 默认使用 us 消息
-    "Arabic": "us",
-    "French": "us",
-    "Spanish": "us",
-    "Korean": "us",
-    "Italian": "us",
-    "Portuguese": "us",
+    "Japanese": "jp",
+    "Korean": "ko",
+    "French": "fr",
+    "Spanish": "es",
+    "Arabic": "ar",
+    "Portuguese": "pt",
+    "Italian": "it",
 }
 
 HOP_REGION_MAP = {
     "us": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
+    "cn": os.path.join(HOP_DIR, "hours_of_operation_hk.json"),
     "hk": os.path.join(HOP_DIR, "hours_of_operation_hk.json"),
     "de": os.path.join(HOP_DIR, "hours_of_operation_de.json"),
+    "jp": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
+    "ko": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
+    "fr": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
+    "es": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
+    "ar": os.path.join(HOP_DIR, "hours_of_operation_dubai.json"),
+    "pt": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
+    "it": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
 }
 
 
@@ -81,6 +83,18 @@ def load_languages_csv():
     return rows
 
 
+def get_ivr_messages(region_key):
+    """从整合的 ivr_messages.json 中按 language key 获取 IVR 消息"""
+    all_msgs = load_json(IVR_MESSAGES_FILE)
+    return all_msgs.get(region_key, all_msgs["us"])
+
+
+def get_survey_messages(region_key):
+    """从整合的 survey_messages.json 中按 language key 获取 Survey 消息"""
+    all_msgs = load_json(SURVEY_MESSAGES_FILE)
+    return all_msgs.get(region_key, all_msgs["us"])
+
+
 def get_arn_prefix(arn):
     """从 Connect 实例 ARN 中提取前缀 (arn:aws:connect:region:account)"""
     return arn.rsplit(":", 2)[0]
@@ -96,6 +110,38 @@ def prompt_input(msg, default=None):
         if val:
             return val
         print("  ⚠ 不能为空，请重新输入。")
+
+
+def sanitize_stack_name(name):
+    """将任意名称转换为合法的 CDK Stack 名称。
+    规则: /^[A-Za-z][A-Za-z0-9-]*$/
+    尽量保持与原始名称接近。
+    """
+    import re
+    sanitized = name.replace("_", "-").replace(" ", "-")
+    sanitized = re.sub(r"[^A-Za-z0-9-]", "", sanitized)
+    sanitized = re.sub(r"-{2,}", "-", sanitized)
+    sanitized = sanitized.strip("-")
+    # 数字开头时加最小前缀 "S"
+    if sanitized and not sanitized[0].isalpha():
+        sanitized = "S" + sanitized
+    return sanitized if sanitized else "MyTenant"
+
+
+def prompt_tenant_name(msg, default=None):
+    """输入租户名称，自动生成合法的 CDK Stack 名称。
+    tenant_name: 用户原始输入，用于 Connect 资源命名（Queue、Flow 等前缀）
+    stack_name:  符合 CDK 规则的名称，仅用于 CloudFormation Stack ID
+    返回 (tenant_name, stack_name)
+    """
+    import re
+    pattern = re.compile(r"^[A-Za-z][A-Za-z0-9-]*$")
+    tenant_name = prompt_input(msg, default)
+    if pattern.match(tenant_name):
+        return tenant_name, tenant_name
+    stack_name = sanitize_stack_name(tenant_name)
+    print(f"  ℹ CDK Stack 名称自动设为: {stack_name}（原始租户名 '{tenant_name}' 用于 Connect 资源命名）")
+    return tenant_name, stack_name
 
 
 def prompt_yes_no(msg, default="y"):
@@ -281,12 +327,13 @@ def step2_language_voice():
     print(f"\n  已选择语言: {selected_lang}")
     print(f"  使用语音: {first_voice} ({voices[0]['Gender'].strip()})")
 
-    # 确定区域映射
+    # 确定区域映射 — 优先匹配更具体的名称（如 "Chinese (Mandarin)" 优先于 "Chinese"）
     region_key = "us"  # 默认
+    best_match_len = 0
     for key, value in LANGUAGE_REGION_MAP.items():
-        if key.lower() in selected_lang.lower():
+        if key.lower() in selected_lang.lower() and len(key) > best_match_len:
             region_key = value
-            break
+            best_match_len = len(key)
 
     if not prompt_yes_no(f"\n  确认使用 {selected_lang} / {first_voice}?"):
         print("  已取消。")
@@ -328,17 +375,10 @@ def step4_survey(region_key):
     survey_feedback = ""
 
     if enable:
-        # 加载对应区域的 survey 消息
-        survey_file = SURVEY_MESSAGES_MAP.get(region_key, SURVEY_MESSAGES_MAP["us"])
-        if os.path.exists(survey_file):
-            survey_data = load_json(survey_file)
-            survey_message = survey_data.get("surveyMessage", "")
-            survey_feedback = survey_data.get("surveyMessageFeedback", "")
-        else:
-            # 使用默认 us
-            survey_data = load_json(SURVEY_MESSAGES_MAP["us"])
-            survey_message = survey_data.get("surveyMessage", "")
-            survey_feedback = survey_data.get("surveyMessageFeedback", "")
+        # 从整合的 survey_messages.json 中按 language key 获取消息
+        survey_data = get_survey_messages(region_key)
+        survey_message = survey_data.get("surveyMessage", "")
+        survey_feedback = survey_data.get("surveyMessageFeedback", "")
 
         print(f"  ✓ 将部署 Survey 联系流")
         print(f"    评价提示: {survey_message[:50]}...")
@@ -399,7 +439,7 @@ def deploy(
     print(f"{'='*60}")
 
     # 获取租户名称
-    tenant_name = prompt_input("\n  请输入租户名称 (Tenant Name)", "MyTenant")
+    tenant_name, stack_name = prompt_tenant_name("\n  请输入租户名称 (Tenant Name)", "MyTenant")
     tenant_description = prompt_input("  请输入租户描述 (可选)", "Voice channel deployment")
 
     print()
@@ -408,20 +448,21 @@ def deploy(
     print_summary("弹屏功能", "启用" if enable_screenpop else "禁用")
     print_summary("满意度评价", "启用" if enable_survey else "禁用")
     print_summary("租户名称", tenant_name)
+    if stack_name != tenant_name:
+        print_summary("CDK Stack 名称", stack_name)
     print_summary("座席文件", AGENTS_CSV)
 
     # 加载 IVR 消息
-    ivr_file = IVR_MESSAGES_MAP.get(region_key, IVR_MESSAGES_MAP["us"])
-    if os.path.exists(ivr_file):
-        ivr_data = load_json(ivr_file)
-    else:
-        ivr_data = load_json(IVR_MESSAGES_MAP["us"])
+    ivr_data = get_ivr_messages(region_key)
 
     welcome_msg = ivr_data.get("welcomeMessage", "")
     open_hour_msg = ivr_data.get("openHourMessage", "")
     error_msg = ivr_data.get("errorMessage", "")
 
-    save_json(ivr_data, "ivr_messages.json")
+    save_json(
+        {"welcomeMessage": welcome_msg, "openHourMessage": open_hour_msg, "errorMessage": error_msg},
+        "ivr_messages.json",
+    )
 
     print_summary("欢迎消息", welcome_msg[:40] + "...")
     print_summary("非工作时间消息", open_hour_msg[:40] + "...")
@@ -446,6 +487,7 @@ def deploy(
 
     # 设置环境变量
     os.environ["tenant_name"] = tenant_name
+    os.environ["stack_name"] = stack_name
     os.environ["tenant_description"] = tenant_description
     os.environ["tts_voice"] = tts_voice
     os.environ["deploy_survey_flow"] = str(enable_survey)
@@ -462,6 +504,7 @@ def deploy(
     save_json(
         {
             "tenant_name": tenant_name,
+            "stack_name": stack_name,
             "tenant_description": tenant_description,
             "tts_voice": tts_voice,
             "deploy_survey_flow": str(enable_survey),
@@ -530,16 +573,15 @@ def cleanup():
 
 def destroy():
     """销毁已部署的 CDK Stack"""
-    tenant_name = prompt_input("请输入要销毁的租户名称 (Stack Name)")
+    tenant_name, stack_name = prompt_tenant_name("请输入要销毁的租户名称 (Tenant Name)")
 
-    print(f"\n  ⚠ 即将销毁 Stack: {tenant_name}")
+    print(f"\n  ⚠ 即将销毁 Stack: {stack_name}" + (f"（租户名: {tenant_name}）" if stack_name != tenant_name else ""))
     if not prompt_yes_no("  确认销毁?", "n"):
         print("  已取消。")
         return
 
-    # CDK destroy 仍会加载 app.py → Stack，Stack 内部代码读取多个环境变量。
-    # 这里需要把所有必需的环境变量都设上占位值，否则 KeyError 会导致 synth 失败。
     os.environ["tenant_name"] = tenant_name
+    os.environ["stack_name"] = stack_name
     os.environ["tenant_description"] = ""
     os.environ["tts_voice"] = "Joanna"
     os.environ["deploy_survey_flow"] = "False"
@@ -585,10 +627,14 @@ def destroy():
 
     # 确保 ivr_messages.json 存在
     if not os.path.exists("ivr_messages.json"):
-        default_msg = IVR_MESSAGES_MAP.get("us")
-        if default_msg and os.path.exists(default_msg):
-            copy_file(default_msg, "ivr_messages.json")
-            created_placeholders.append("ivr_messages.json")
+        ivr_default = get_ivr_messages("us")
+        save_json(
+            {"welcomeMessage": ivr_default["welcomeMessage"],
+             "openHourMessage": ivr_default["openHourMessage"],
+             "errorMessage": ivr_default["errorMessage"]},
+            "ivr_messages.json",
+        )
+        created_placeholders.append("ivr_messages.json")
 
     try:
         result = subprocess.run(
@@ -596,7 +642,7 @@ def destroy():
             capture_output=False,
         )
         if result.returncode == 0:
-            print(f"\n  ✓ Stack {tenant_name} 已销毁!")
+            print(f"\n  ✓ Stack {stack_name} 已销毁!")
         else:
             print(f"\n  ✗ 销毁失败，请检查 CloudFormation 控制台。")
     except FileNotFoundError:
