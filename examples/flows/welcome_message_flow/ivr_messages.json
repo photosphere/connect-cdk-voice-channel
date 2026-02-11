@@ -1,0 +1,68 @@
+{
+  "us": {
+    "language": "English",
+    "welcomeMessage": "Thanks for calling Amazon Connect. ",
+    "openHourMessage": "Thanks for calling Amazon Connect.Our office hours are from 9 am to 5 pm, Monday to Friday. Please call us back during office hour. Thank you.",
+    "errorMessage": "Thanks for calling Amazon Connect.We are currently experiencing heavy call traffic. Please call us later."
+  },
+  "cn": {
+    "language": "Chinese (Mandarin)",
+    "welcomeMessage": "感谢您的来电。我们的客服代表正在接通中，请您耐心等待。谢谢。",
+    "openHourMessage": "感谢您的来电。我们的办公时间为周一至周五上午9点至下午5点。请在办公时间给我们来电。谢谢。",
+    "errorMessage": "感谢您的来电。我们目前的通话流量很大。请稍后再拨。谢谢。"
+  },
+  "hk": {
+    "language": "Chinese (Cantonese)",
+    "welcomeMessage": "感谢您致电亚马逊客服中心。我们的客服代表正在接通中，请您耐心等待。谢谢。",
+    "openHourMessage": "感谢您致电亚马逊客服中心。我们的办公时间为周一至周五上午9点至下午5点。请在办公时间给我们来电。谢谢。",
+    "errorMessage": "感谢您致电亚马逊客服中心。我们目前的通话流量很大。请稍后拨打我们的电话。谢谢。"
+  },
+  "jp": {
+    "language": "Japanese",
+    "welcomeMessage": "お電話ありがとうございます。担当者におつなぎしますので、しばらくお待ちください。",
+    "openHourMessage": "お電話ありがとうございます。営業時間は月曜日から金曜日の午前9時から午後5時までです。営業時間内におかけ直しください。",
+    "errorMessage": "お電話ありがとうございます。ただいま電話が大変混み合っております。しばらくしてからおかけ直しください。"
+  },
+  "ko": {
+    "language": "Korean",
+    "welcomeMessage": "전화 주셔서 감사합니다. 상담원 연결 중이오니 잠시만 기다려 주십시오.",
+    "openHourMessage": "전화 주셔서 감사합니다. 운영 시간은 월요일부터 금요일까지 오전 9시부터 오후 5시까지입니다. 운영 시간에 다시 전화해 주십시오.",
+    "errorMessage": "전화 주셔서 감사합니다. 현재 통화량이 많아 연결이 지연되고 있습니다. 잠시 후 다시 전화해 주십시오."
+  },
+  "fr": {
+    "language": "French",
+    "welcomeMessage": "Merci de votre appel. Un conseiller va prendre votre appel, veuillez patienter.",
+    "openHourMessage": "Merci de votre appel. Nos heures d'ouverture sont du lundi au vendredi de 9h à 17h. Veuillez rappeler pendant les heures d'ouverture. Merci.",
+    "errorMessage": "Merci de votre appel. Nous connaissons actuellement un volume d'appels élevé. Veuillez rappeler ultérieurement."
+  },
+  "de": {
+    "language": "German",
+    "welcomeMessage": "Willkommen im Amazon Contact Center. Wie kann ich dir heute helfen?",
+    "openHourMessage": "Willkommen im Amazon Contact Center.Unsere Bürozeiten sind montags bis freitags von 9 bis 17 Uhr. Bitte rufen Sie uns während der Bürozeiten zurück. Danke.",
+    "errorMessage": "Willkommen im Amazon Contact Center.Wir haben derzeit einen starken Anrufverkehr. Bitte rufen Sie uns später an."
+  },
+  "es": {
+    "language": "Spanish",
+    "welcomeMessage": "Gracias por llamar. Un agente le atenderá en breve, por favor espere.",
+    "openHourMessage": "Gracias por llamar. Nuestro horario de atención es de lunes a viernes de 9:00 a 17:00. Por favor, llame durante el horario de atención. Gracias.",
+    "errorMessage": "Gracias por llamar. Actualmente estamos experimentando un alto volumen de llamadas. Por favor, inténtelo más tarde."
+  },
+  "ar": {
+    "language": "Arabic",
+    "welcomeMessage": "شكراً لاتصالك. سيتم تحويلك إلى أحد ممثلي خدمة العملاء، يرجى الانتظار.",
+    "openHourMessage": "شكراً لاتصالك. ساعات العمل من الاثنين إلى الجمعة من الساعة 9 صباحاً حتى 5 مساءً. يرجى الاتصال خلال ساعات العمل. شكراً.",
+    "errorMessage": "شكراً لاتصالك. نحن نواجه حالياً حجم مكالمات كبير. يرجى المحاولة لاحقاً."
+  },
+  "pt": {
+    "language": "Portuguese",
+    "welcomeMessage": "Obrigado por ligar. Um atendente irá atendê-lo em breve, por favor aguarde.",
+    "openHourMessage": "Obrigado por ligar. Nosso horário de atendimento é de segunda a sexta-feira, das 9h às 17h. Por favor, ligue durante o horário de atendimento. Obrigado.",
+    "errorMessage": "Obrigado por ligar. Estamos com um alto volume de chamadas no momento. Por favor, tente novamente mais tarde."
+  },
+  "it": {
+    "language": "Italian",
+    "welcomeMessage": "Grazie per aver chiamato. Un operatore la assisterà a breve, la preghiamo di attendere.",
+    "openHourMessage": "Grazie per aver chiamato. I nostri orari di apertura sono dal lunedì al venerdì dalle 9:00 alle 17:00. La preghiamo di richiamare durante gli orari di apertura. Grazie.",
+    "errorMessage": "Grazie per aver chiamato. Al momento stiamo riscontrando un elevato volume di chiamate. La preghiamo di riprovare più tardi."
+  }
+}
