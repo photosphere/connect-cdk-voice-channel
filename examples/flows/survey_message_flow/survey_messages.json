@@ -1,0 +1,57 @@
+{
+  "us": {
+    "language": "English",
+    "surveyMessage": "Please rate your call experience from 1 to 3. Excellent press 1, good press 2, bad press 3.",
+    "surveyMessageFeedback": "Thanks for your feedback. Have a good day. Bye."
+  },
+  "cn": {
+    "language": "Chinese (Mandarin)",
+    "surveyMessage": "请对我们的服务进行评价。非常满意请按1，满意请按2，不满意请按3。",
+    "surveyMessageFeedback": "感谢您的评价。祝您生活愉快，再见。"
+  },
+  "hk": {
+    "language": "Chinese (Cantonese)",
+    "surveyMessage": "请对我们的服务评价。非常满意请按1，满意请按2，不满意请按3.",
+    "surveyMessageFeedback": "感谢您的评价。再见。"
+  },
+  "jp": {
+    "language": "Japanese",
+    "surveyMessage": "本日の対応についてご評価ください。大変満足の場合は1を、満足の場合は2を、不満の場合は3を押してください。",
+    "surveyMessageFeedback": "ご評価いただきありがとうございます。良い一日をお過ごしください。"
+  },
+  "ko": {
+    "language": "Korean",
+    "surveyMessage": "통화 경험을 평가해 주십시오. 매우 만족은 1번, 만족은 2번, 불만족은 3번을 눌러 주십시오.",
+    "surveyMessageFeedback": "평가해 주셔서 감사합니다. 좋은 하루 되십시오."
+  },
+  "fr": {
+    "language": "French",
+    "surveyMessage": "Veuillez évaluer votre expérience d'appel de 1 à 3. Excellent appuyez sur 1, bon appuyez sur 2, mauvais appuyez sur 3.",
+    "surveyMessageFeedback": "Merci pour votre retour. Bonne journée. Au revoir."
+  },
+  "de": {
+    "language": "German",
+    "surveyMessage": "Bitte bewerten Sie Ihre Anruferfahrung von 1 bis 3. Ausgezeichnet drücken Sie 1, gut drücken Sie 2, schlecht drücken Sie 3.",
+    "surveyMessageFeedback": "Vielen Dank für Ihr Feedback. Einen schönen Tag noch. Auf Wiederhören."
+  },
+  "es": {
+    "language": "Spanish",
+    "surveyMessage": "Por favor, califique su experiencia de llamada del 1 al 3. Excelente presione 1, bueno presione 2, malo presione 3.",
+    "surveyMessageFeedback": "Gracias por su opinión. Que tenga un buen día. Adiós."
+  },
+  "ar": {
+    "language": "Arabic",
+    "surveyMessage": "يرجى تقييم تجربة مكالمتك من 1 إلى 3. ممتاز اضغط 1، جيد اضغط 2، سيئ اضغط 3.",
+    "surveyMessageFeedback": "شكراً لملاحظاتك. نتمنى لك يوماً سعيداً. مع السلامة."
+  },
+  "pt": {
+    "language": "Portuguese",
+    "surveyMessage": "Por favor, avalie sua experiência de chamada de 1 a 3. Excelente pressione 1, bom pressione 2, ruim pressione 3.",
+    "surveyMessageFeedback": "Obrigado pelo seu feedback. Tenha um bom dia. Até logo."
+  },
+  "it": {
+    "language": "Italian",
+    "surveyMessage": "La preghiamo di valutare la sua esperienza da 1 a 3. Eccellente prema 1, buono prema 2, scarso prema 3.",
+    "surveyMessageFeedback": "Grazie per il suo feedback. Le auguriamo una buona giornata. Arrivederci."
+  }
+}
