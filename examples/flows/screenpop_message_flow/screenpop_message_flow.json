@@ -203,7 +203,7 @@
           "CustomerEmail": "$.Customer.EmailAddress",
           "LastAgentID": "$.Customer.CalculatedAttributes._last_agent_id",
           "LastChannel": "$.Customer.CalculatedAttributes._last_channel",
-          "QueueName": "BasicQueue",
+          "QueueName": "contact_queue_name",
           "Language": "$.LanguageCode",
           "HotlineNumber": "$.SystemEndpoint.Address",
           "NewCustomer": "$.Customer.CalculatedAttributes._new_customer",
