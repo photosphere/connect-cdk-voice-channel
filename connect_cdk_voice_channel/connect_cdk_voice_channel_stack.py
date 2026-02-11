@@ -445,7 +445,8 @@ def create_screenpop_contact_flow(self, file_path, output_file, flow_name, descr
 
         # 替换消息内容
         replacements = {
-            "arn_prefix": get_arn_prefix(connect_instance_arn)
+            "arn_prefix": get_arn_prefix(connect_instance_arn),
+            "contact_queue_name": f"{os.environ['tenant_name']} Queue"
         }
 
         for old_text, new_text in replacements.items():
