@@ -275,148 +275,151 @@ def handle_cdk_operation(operation, command, initial_message, spinner_message):
         monitor_stack_status(cfm_client, os.environ["tenant_name"], operation)
 
 
-st.set_page_config(
-    page_title="Amazon Connect Voice Channel Deployment Tool!", layout="wide")
+# Streamlit UI 代码仅在 Streamlit 运行环境下执行，
+# 避免 CDK synth 导入模块时覆盖 CLI 已准备好的配置文件（如 ivr_messages.json）
+if get_script_run_ctx() is not None:
+    st.set_page_config(
+        page_title="Amazon Connect Voice Channel Deployment Tool!", layout="wide")
 
-# app title
-header = f"Amazon Connect Voice Channel Deployment Tool!"
-st.write(f"<h3 class='main-header'>{header}</h3>", unsafe_allow_html=True)
+    # app title
+    header = f"Amazon Connect Voice Channel Deployment Tool!"
+    st.write(f"<h3 class='main-header'>{header}</h3>", unsafe_allow_html=True)
 
-# 配置区域
-handle_agent_configuration()
-handle_hours_operation_configuration()
+    # 配置区域
+    handle_agent_configuration()
+    handle_hours_operation_configuration()
 
-tab1_button = st.checkbox('Deploy IVR Flow', value=True, disabled=True)
-tab2_button = st.checkbox('Deploy Survey Flow')
-tab3_button = st.checkbox('Deploy Screen Flow')
+    tab1_button = st.checkbox('Deploy IVR Flow', value=True, disabled=True)
+    tab2_button = st.checkbox('Deploy Survey Flow')
+    tab3_button = st.checkbox('Deploy Screen Flow')
 
-tab1, tab2 = st.tabs(
-    ["IVR Flow", "Survey Flow"])
+    tab1, tab2 = st.tabs(
+        ["IVR Flow", "Survey Flow"])
 
-if tab1_button:
-    with tab1:
-        with st.expander("IVR Configuration", expanded=True):
-            # 语言和语音选择
-            tts_voice = setup_language_voice_selection()
+    if tab1_button:
+        with tab1:
+            with st.expander("IVR Configuration", expanded=True):
+                # 语言和语音选择
+                tts_voice = setup_language_voice_selection()
 
-            # IVR消息配置
-            ivr_message_fields = {
-                "welcomeMessage": "IVR welcome message",
-                "openHourMessage": "IVR open hour message",
-                "errorMessage": "IVR error message"
-            }
+                # IVR消息配置
+                ivr_message_fields = {
+                    "welcomeMessage": "IVR welcome message",
+                    "openHourMessage": "IVR open hour message",
+                    "errorMessage": "IVR error message"
+                }
 
-            create_message_configuration(
-                'examples/flows/welcome_message_flow/welcome_messages/ivr_messages_us.json',
-                'ivr_messages.json',
-                ivr_message_fields,
-                'Update IVR Messages',
-                "IVR messages have been updated"
-            )
+                create_message_configuration(
+                    'examples/flows/welcome_message_flow/welcome_messages/ivr_messages_us.json',
+                    'ivr_messages.json',
+                    ivr_message_fields,
+                    'Update IVR Messages',
+                    "IVR messages have been updated"
+                )
 
-if tab2_button:
-    with tab2:
-        with st.expander("Survey Configuration", expanded=True):
-            # 调查消息配置
-            survey_message_fields = {
-                "surveyMessage": "Survey Message",
-                "surveyMessageFeedback": "Survey Message Feedback"
-            }
+    if tab2_button:
+        with tab2:
+            with st.expander("Survey Configuration", expanded=True):
+                # 调查消息配置
+                survey_message_fields = {
+                    "surveyMessage": "Survey Message",
+                    "surveyMessageFeedback": "Survey Message Feedback"
+                }
 
-            create_message_configuration(
-                'examples/flows/survey_message_flow/survey_messages/survey_messages_us.json',
-                'survey_message.json',
-                survey_message_fields,
-                'Update Survey Message',
-                "Survey message have been updated"
-            )
+                create_message_configuration(
+                    'examples/flows/survey_message_flow/survey_messages/survey_messages_us.json',
+                    'survey_message.json',
+                    survey_message_fields,
+                    'Update Survey Message',
+                    "Survey message have been updated"
+                )
 
-with st.sidebar:
-    # connect instance configuration
-    st.subheader('Connect Parameters', divider="rainbow")
+    with st.sidebar:
+        # connect instance configuration
+        st.subheader('Connect Parameters', divider="rainbow")
 
-    # connect configuration
-    default_connect_instance_id = get_default_connect_instance_id()
-    connect_instance_id = st.text_input(
-        'Connect Instance Id', default_connect_instance_id)
+        # connect configuration
+        default_connect_instance_id = get_default_connect_instance_id()
+        connect_instance_id = st.text_input(
+            'Connect Instance Id', default_connect_instance_id)
 
-    # load env
-    if st.button('Load Configuration'):
-        connect_client = boto3.client("connect")
-        load_connect_configuration(connect_client, connect_instance_id)
-    
-    # 显示ARN值（从session state获取）
-    if 'connect_instance_arn' in st.session_state:
-        st.text_input('Amazon Connect instance ARN',
-                      value=st.session_state['connect_instance_arn'],
-                      disabled=True)
-    if 'security_profile_arn' in st.session_state:
-        st.text_input('Security profile ARN (Agent Role)',
-                      value=st.session_state['security_profile_arn'],
-                      disabled=True)
+        # load env
+        if st.button('Load Configuration'):
+            connect_client = boto3.client("connect")
+            load_connect_configuration(connect_client, connect_instance_id)
+        
+        # 显示ARN值（从session state获取）
+        if 'connect_instance_arn' in st.session_state:
+            st.text_input('Amazon Connect instance ARN',
+                          value=st.session_state['connect_instance_arn'],
+                          disabled=True)
+        if 'security_profile_arn' in st.session_state:
+            st.text_input('Security profile ARN (Agent Role)',
+                          value=st.session_state['security_profile_arn'],
+                          disabled=True)
 
-    # tenant configuration
-    tenant_name = st.text_input('Tenant Name (Required)')
-    tenant_description = st.text_area('Tenant Description (Optional)')
-    st.write('*You must click follow button to load and save configuration*')
+        # tenant configuration
+        tenant_name = st.text_input('Tenant Name (Required)')
+        tenant_description = st.text_area('Tenant Description (Optional)')
+        st.write('*You must click follow button to load and save configuration*')
 
-    # save env
-    col1, col2 = st.columns(2)
-    with col1:
-        btn_Save=st.button('Save')
-        if btn_Save:
-            save_environment_configuration(
-                tenant_name, tenant_description, tts_voice, tab2_button, tab3_button)
-    
-    with col2:
-        btn_Clear=st.button('Clear')
-        if btn_Clear:
-            files_to_remove = [
-                'environment_config.json',
-                'hours_of_operation.json',
-                'inbound_flow_updated.json',
-                'inbound_flow.json',
-                'ivr_messages.json',
-                'security_profile.json'
-            ]
-            
-            for file_path in files_to_remove:
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                    
-            # 清除session state中的ARN值
-            if 'connect_instance_arn' in st.session_state:
-                del st.session_state['connect_instance_arn']
-            if 'security_profile_arn' in st.session_state:
-                del st.session_state['security_profile_arn']
+        # save env
+        col1, col2 = st.columns(2)
+        with col1:
+            btn_Save=st.button('Save')
+            if btn_Save:
+                save_environment_configuration(
+                    tenant_name, tenant_description, tts_voice, tab2_button, tab3_button)
+        
+        with col2:
+            btn_Clear=st.button('Clear')
+            if btn_Clear:
+                files_to_remove = [
+                    'environment_config.json',
+                    'hours_of_operation.json',
+                    'inbound_flow_updated.json',
+                    'inbound_flow.json',
+                    'ivr_messages.json',
+                    'security_profile.json'
+                ]
                 
-            st.success('Configuration files have been cleared')
-            st.experimental_rerun()
+                for file_path in files_to_remove:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        
+                # 清除session state中的ARN值
+                if 'connect_instance_arn' in st.session_state:
+                    del st.session_state['connect_instance_arn']
+                if 'security_profile_arn' in st.session_state:
+                    del st.session_state['security_profile_arn']
+                    
+                st.success('Configuration files have been cleared')
+                st.experimental_rerun()
 
-    if(btn_Save):
-        st.success('Configuration have been saved')
-    if(btn_Clear):
-        st.success('Configuration have been cleared')
-    
-    # deploy cdk
-    st.subheader('CDK Deployment', divider="rainbow")
-    if st.button('Deploy CDK Stack'):
-        handle_cdk_operation(
-            'deploy',
-            ['cdk', 'deploy'],
-            'CDK stack initialized...........',
-            'Deploying......'
-        )
+        if(btn_Save):
+            st.success('Configuration have been saved')
+        if(btn_Clear):
+            st.success('Configuration have been cleared')
+        
+        # deploy cdk
+        st.subheader('CDK Deployment', divider="rainbow")
+        if st.button('Deploy CDK Stack'):
+            handle_cdk_operation(
+                'deploy',
+                ['cdk', 'deploy'],
+                'CDK stack initialized...........',
+                'Deploying......'
+            )
 
-    # destroy cdk
-    st.subheader('Clean Resources', divider="rainbow")
-    if st.button('Destroy CDK Stack'):
-        handle_cdk_operation(
-            'destroy',
-            ['cdk', 'destroy', '--force'],
-            'Destroying CDK stack...........',
-            'Destroying......'
-        )
+        # destroy cdk
+        st.subheader('Clean Resources', divider="rainbow")
+        if st.button('Destroy CDK Stack'):
+            handle_cdk_operation(
+                'destroy',
+                ['cdk', 'destroy', '--force'],
+                'Destroying CDK stack...........',
+                'Destroying......'
+            )
 
 
 def get_config_value(file_path, key, default=''):
