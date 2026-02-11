@@ -482,6 +482,7 @@ def create_survey_contact_flow(self, connect_instance_arn, formatted_now):
 
         # 替换消息内容
         replacements = {
+            "Joanna": os.environ["tts_voice"],
             "survey_message": os.environ["survey_message"],
             "survey_feedback": os.environ["survey_message_feedback"]
         }
