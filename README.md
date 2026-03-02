@@ -52,12 +52,7 @@ pip install -r requirements.txt
 ### Build and run the Application Locally
 
 ```bash
-streamlit run connect_cdk_voice_channel/connect_cdk_voice_channel_stack.py
-```
-### Or Build and run the Application on Cloud9
-
-```bash
-streamlit run connect_cdk_voice_channel/connect_cdk_voice_channel_stack.py --server.port 8080 --server.address=0.0.0.0
+python deploy_cli.py
 ```
 
-<img width="1279" height="671" alt="Image" src="https://github.com/user-attachments/assets/528a3eae-3946-41fb-b1e5-fd893fcbb831" />
+<img width="1127" height="925" alt="Image" src="https://github.com/user-attachments/assets/ed26791b-9880-4650-b037-999aa987798d" />
