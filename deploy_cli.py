@@ -25,6 +25,7 @@ HOP_DIR = os.path.join(EXAMPLES_DIR, "hoursofoperation")
 
 IVR_MESSAGES_FILE = os.path.join(FLOWS_DIR, "welcome_message_flow", "ivr_messages.json")
 SURVEY_MESSAGES_FILE = os.path.join(FLOWS_DIR, "survey_message_flow", "survey_messages.json")
+SCREENPOP_TRANSLATIONS_FILE = os.path.join(FLOWS_DIR, "screenpop_message_flow", "screenpop_translations.json")
 
 # 语言名称到区域 key 的映射（用于选取 IVR/Survey 消息和营业时间文件）
 LANGUAGE_REGION_MAP = {
@@ -93,6 +94,12 @@ def get_survey_messages(region_key):
     """从整合的 survey_messages.json 中按 language key 获取 Survey 消息"""
     all_msgs = load_json(SURVEY_MESSAGES_FILE)
     return all_msgs.get(region_key, all_msgs["us"])
+
+
+def get_screenpop_translations(region_key):
+    """从 screenpop_translations.json 中按 language key 获取弹屏界面翻译"""
+    all_translations = load_json(SCREENPOP_TRANSLATIONS_FILE)
+    return all_translations.get(region_key, all_translations["us"])
 
 
 def get_arn_prefix(arn):
@@ -467,6 +474,12 @@ def deploy(
     print_summary("欢迎消息", welcome_msg[:40] + "...")
     print_summary("非工作时间消息", open_hour_msg[:40] + "...")
 
+    # 加载弹屏翻译
+    if enable_screenpop:
+        screenpop_translations = get_screenpop_translations(region_key)
+        save_json(screenpop_translations, "screenpop_translations.json")
+        print_summary("弹屏界面语言", f"已设置为 {region_key} 区域语言")
+
     # 加载 HOP
     hop_file = HOP_REGION_MAP.get(region_key, HOP_REGION_MAP["us"])
     if os.path.exists(hop_file):
@@ -495,6 +508,7 @@ def deploy(
     os.environ["ivr_welcome_message"] = welcome_msg
     os.environ["ivr_open_hour_message"] = open_hour_msg
     os.environ["ivr_error_message"] = error_msg
+    os.environ["language_region_key"] = region_key
 
     if enable_survey:
         os.environ["survey_message"] = survey_message
@@ -509,6 +523,7 @@ def deploy(
             "tts_voice": tts_voice,
             "deploy_survey_flow": str(enable_survey),
             "deploy_screen_flow": str(enable_screenpop),
+            "language_region_key": region_key,
         },
         "environment_config.json",
     )
@@ -552,6 +567,7 @@ def cleanup():
         "hours_of_operation.json",
         "ivr_messages.json",
         "survey_message.json",
+        "screenpop_translations.json",
         "inbound_flow.json",
         "inbound_flow_updated.json",
         "survey_message_flow.json",
@@ -635,6 +651,12 @@ def destroy():
             "ivr_messages.json",
         )
         created_placeholders.append("ivr_messages.json")
+
+    # 确保 screenpop_translations.json 存在
+    if not os.path.exists("screenpop_translations.json"):
+        screenpop_default = get_screenpop_translations("us")
+        save_json(screenpop_default, "screenpop_translations.json")
+        created_placeholders.append("screenpop_translations.json")
 
     try:
         result = subprocess.run(
