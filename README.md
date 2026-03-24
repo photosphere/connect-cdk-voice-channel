@@ -55,7 +55,7 @@ pip install -r requirements.txt
 python deploy_cli.py
 ```
 
-<img width="1127" height="925" alt="Image" src="https://github.com/user-attachments/assets/ed26791b-9880-4650-b037-999aa987798d" 
+<img width="1127" height="925" alt="Image" src="https://github.com/user-attachments/assets/ed26791b-9880-4650-b037-999aa987798d" />
 
 ### Amazon Connect configure and demo
 
