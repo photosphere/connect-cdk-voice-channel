@@ -444,6 +444,15 @@ def create_screenpop_contact_flow(self, file_path, output_file, flow_name, descr
     """创建联系流程的通用函数"""
     if os.path.exists(file_path):
         flow_data = load_json_file(file_path)
+
+        # 注入弹屏翻译到 UpdateContactAttributes (System attributes) action
+        if os.path.exists('screenpop_translations.json'):
+            translations = load_json_file('screenpop_translations.json')
+            for action in flow_data.get('Actions', []):
+                if action.get('Identifier') == 'System attributes' and action.get('Type') == 'UpdateContactAttributes':
+                    action['Parameters']['Attributes'].update(translations)
+                    break
+
         flow_content = json.dumps(flow_data)
 
         # 替换消息内容
