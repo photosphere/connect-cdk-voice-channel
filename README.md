@@ -34,6 +34,146 @@ cdk bootstrap
 
 ---
 
+## 所需 AWS 权限
+
+运行 `deploy_cli.py` 需要的权限分为两部分：
+
+1. **CLI 直接调用的 API**（通过 boto3）：验证实例、更新安全配置文件、重名资源协调（列举/删除）、读取 CloudFormation 堆栈资源等。
+2. **`cdk deploy` 通过 CloudFormation 创建/更新/删除的资源**：营业时间、队列、联系流、路由配置、座席、Lambda 函数及其执行角色、Lambda 与 Connect 的集成关联等。
+
+下面的 IAM 策略整合了以上所有权限，可直接附加到执行部署的 IAM 用户或角色上。为便于使用，资源范围使用了 `*`；如需遵循最小权限原则，可将 `Resource` 收窄到具体的实例/账户/区域 ARN。
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AmazonConnectManagement",
+      "Effect": "Allow",
+      "Action": [
+        "connect:DescribeInstance",
+        "connect:ListSecurityProfiles",
+        "connect:UpdateSecurityProfile",
+        "connect:ListUsers",
+        "connect:CreateUser",
+        "connect:UpdateUserIdentityInfo",
+        "connect:UpdateUserPhoneConfig",
+        "connect:UpdateUserRoutingProfile",
+        "connect:UpdateUserSecurityProfiles",
+        "connect:DeleteUser",
+        "connect:DescribeUser",
+        "connect:ListRoutingProfiles",
+        "connect:CreateRoutingProfile",
+        "connect:UpdateRoutingProfileConcurrency",
+        "connect:UpdateRoutingProfileDefaultOutboundQueue",
+        "connect:UpdateRoutingProfileName",
+        "connect:UpdateRoutingProfileQueues",
+        "connect:DeleteRoutingProfile",
+        "connect:ListQueues",
+        "connect:CreateQueue",
+        "connect:UpdateQueueHoursOfOperation",
+        "connect:UpdateQueueName",
+        "connect:UpdateQueueStatus",
+        "connect:DeleteQueue",
+        "connect:ListHoursOfOperations",
+        "connect:CreateHoursOfOperation",
+        "connect:UpdateHoursOfOperation",
+        "connect:DeleteHoursOfOperation",
+        "connect:ListContactFlows",
+        "connect:CreateContactFlow",
+        "connect:UpdateContactFlowContent",
+        "connect:UpdateContactFlowMetadata",
+        "connect:DeleteContactFlow",
+        "connect:ListLambdaFunctions",
+        "connect:AssociateLambdaFunction",
+        "connect:DisassociateLambdaFunction",
+        "connect:TagResource",
+        "connect:UntagResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LambdaFunctionManagement",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:GetFunction",
+        "lambda:CreateFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:DeleteFunction",
+        "lambda:AddPermission",
+        "lambda:RemovePermission",
+        "lambda:GetPolicy",
+        "lambda:ListVersionsByFunction",
+        "lambda:TagResource",
+        "lambda:UntagResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IamForLambdaExecutionRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:PassRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:TagRole",
+        "iam:UntagRole"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudFormationDeployment",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:UpdateStack",
+        "cloudformation:DeleteStack",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStackResources",
+        "cloudformation:ListStackResources",
+        "cloudformation:GetTemplate",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:DeleteChangeSet",
+        "cloudformation:GetTemplateSummary"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CdkBootstrapAssetsAndRoles",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:GetBucketLocation",
+        "s3:ListBucket",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "sts:AssumeRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+> **关于 CDK Bootstrap 权限**：CDK v2 默认使用 bootstrap 时创建的 `cdk-*` 角色执行部署。
+> 若采用该默认模式，执行部署的身份主要只需 `sts:AssumeRole`（承担 `cdk-hnb659fds-*` 角色）
+> 以及读取 SSM 中的 bootstrap 版本参数；上述 Connect / Lambda / IAM 等资源权限则由
+> CloudFormation 执行角色持有。若您未使用角色承担模式（或在受限环境中直接部署），则执行身份
+> 需要完整持有上述所有权限。`cdk bootstrap` 本身需要较高权限（通常由管理员执行一次）。
+
+---
+
 ## 命令一览
 
 ```bash
@@ -225,7 +365,23 @@ IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过 `langua
 | Contact Flow (ScreenPop) | `{租户名} ScreenPop Flow` | 弹屏流程（可选） |
 | Contact Flow (Survey) | `{租户名} Survey Flow` | 满意度评价流程（可选） |
 | Routing Profile | `{租户名} Routing Profile` | 路由配置（VOICE + CHAT） |
+| Lambda Function | `{租户名}-GetAgentNameByAgentId` | 根据座席 ID 查询座席姓名，并关联到 Connect 实例 |
 | Users | 来自 `agents.csv` | 座席账号（SOFT_PHONE 模式） |
+
+> **Lambda 部署方式说明**：`GetAgentNameByAgentId` 函数不再使用预打包的 zip 文件导入，
+> 而是直接引用源码目录 `lambda/GetAgentNameByAgentId/lambda_function.py`，由 CDK 在
+> `synth` 阶段自动打包并部署。如需修改函数逻辑，直接编辑该源码文件即可。
+
+### 重名资源的处理（更新 vs 创建）
+
+部署时对所有资源（营业时间、队列、联系流、路由配置、座席、Lambda 等）采用「有重名则更新、
+无重名则创建」的策略：
+
+- **由本 Stack 管理的资源**：使用固定的逻辑 ID，重复运行 `deploy_cli.py`（相同租户名）时，
+  CloudFormation 会对同名资源执行**就地更新**，而不是重新创建。
+- **不由本 Stack 管理的同名资源**（例如手动创建或历史遗留）：部署前工具会通过 boto3 按依赖
+  顺序（座席 → 路由配置 → 队列 → 营业时间 → 联系流 → Lambda）自动删除，随后由 CDK 重新
+  创建，从而避免重名冲突导致部署失败。此清理过程为尽力而为，单项失败不会中断部署。
 
 ---
 
@@ -284,6 +440,11 @@ Agent02,Test,Agent02_Test,Aa12345678.,,,
 ```
 
 如需修改座席列表，直接编辑该文件即可。密码需满足 Amazon Connect 的密码策略要求。
+
+> **座席用户名自动去重**：部署时工具会把 `LastName` 和 `Username` 中的 `Test` 自动替换为
+> 当前租户名称（`Username` 会做合法化处理，去除空格等非法字符）。例如租户名为 `DemoTenant`
+> 时，`Agent01_Test` 会变成 `Agent01_DemoTenant`，`LastName` 变成 `DemoTenant`。由于同一
+> Connect 实例内用户名必须唯一，此机制可避免不同租户或多次部署之间座席重名导致创建失败。
 
 ---
 

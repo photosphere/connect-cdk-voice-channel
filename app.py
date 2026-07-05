@@ -7,7 +7,10 @@ from connect_cdk_voice_channel.connect_cdk_voice_channel_stack import ConnectCdk
 
 
 app = cdk.App()
-ConnectCdkVoiceChannelStack(app, os.environ["tenant_name"], description=os.environ["tenant_description"]
+# CloudFormation Stack 名称：优先使用经过合法化处理的 stack_name，
+# 若不存在则回退到 tenant_name（保持向后兼容）。
+stack_id = os.environ.get("stack_name") or os.environ["tenant_name"]
+ConnectCdkVoiceChannelStack(app, stack_id, description=os.environ.get("tenant_description", "")
                             # If you don't specify 'env', this stack will be environment-agnostic.
                             # Account/Region-dependent features and context lookups will not work,
                             # but a single synthesized template can be deployed anywhere.

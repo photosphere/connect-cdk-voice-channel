@@ -107,6 +107,193 @@ def get_arn_prefix(arn):
     return arn.rsplit(":", 2)[0]
 
 
+def sanitize_username_token(name):
+    """将租户名转换为合法的用户名片段（Connect Username 允许 [A-Za-z0-9_@.-]）。"""
+    import re
+    token = re.sub(r"[^A-Za-z0-9_@.\-]", "", name.replace(" ", ""))
+    return token or "Tenant"
+
+
+def prepare_agents_csv(tenant_name):
+    """复制 agents.csv 到工作目录，并将 LastName / Username 中的 'Test' 替换为租户名。
+
+    这样不同租户或多次部署之间座席用户名不会重复（Connect 实例内用户名必须唯一），
+    避免创建座席时因重名而失败。返回处理后的用户名列表（供重名协调使用）。
+    """
+    if not os.path.exists(AGENTS_CSV):
+        return []
+
+    username_token = sanitize_username_token(tenant_name)
+    rows = []
+    usernames = []
+    with open(AGENTS_CSV, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        for row in reader:
+            if row.get("LastName"):
+                row["LastName"] = row["LastName"].replace("Test", tenant_name)
+            if row.get("Username"):
+                row["Username"] = row["Username"].replace("Test", username_token)
+            rows.append(row)
+            if row.get("Username"):
+                usernames.append(row["Username"])
+
+    with open("agents.csv", "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    return usernames
+
+
+def get_stack_managed_arns(stack_name):
+    """获取当前 CloudFormation Stack 已管理的资源物理 ID（Connect 资源为 ARN）。
+
+    用于在重名协调时区分：由本 Stack 管理的同名资源交给 CloudFormation 就地更新，
+    不属于本 Stack 的同名资源才需要删除后重建。
+    """
+    cfn = boto3.client("cloudformation")
+    managed = set()
+    try:
+        paginator = cfn.get_paginator("list_stack_resources")
+        for page in paginator.paginate(StackName=stack_name):
+            for r in page.get("StackResourceSummaries", []):
+                pid = r.get("PhysicalResourceId")
+                if pid:
+                    managed.add(pid)
+    except Exception:
+        # Stack 尚不存在（首次部署）——返回空集合
+        pass
+    return managed
+
+
+def reconcile_existing_resources(connect_instance_arn, stack_name, tenant_name, agent_usernames):
+    """删除与目标资源同名、但不由当前 Stack 管理的 Connect 资源。
+
+    - 由当前 Stack 管理的同名资源会跳过：CloudFormation 会对其执行就地更新。
+    - 不属于当前 Stack 的同名资源（例如手动创建或历史遗留）会被删除，
+      以便 cdk deploy 顺利创建，实现「有重名则更新、无重名则创建」的效果。
+
+    删除顺序遵循依赖关系：座席 → 路由配置 → 队列 → 营业时间 → 联系流 → Lambda。
+    整个过程为尽力而为（best-effort），单个失败不会中断部署。
+    """
+    instance_id = connect_instance_arn.split("/")[-1]
+    connect_client = boto3.client("connect")
+    managed = get_stack_managed_arns(stack_name)
+
+    prefix = f"{tenant_name} "
+    queue_name = f"{tenant_name} Queue"
+    routing_profile_name = f"{tenant_name} Routing Profile"
+    flow_names = {
+        f"{tenant_name} Inbound Flow",
+        f"{tenant_name} ScreenPop Flow",
+        f"{tenant_name} Survey Flow",
+    }
+    lambda_name = f"{tenant_name}-GetAgentNameByAgentId"
+
+    print("\n  正在检查并清理同名的历史资源（不影响本 Stack 管理的资源）...")
+
+    # 1. 座席（Users）——必须先于路由配置删除
+    try:
+        paginator = connect_client.get_paginator("list_users")
+        for page in paginator.paginate(InstanceId=instance_id):
+            for u in page.get("UserSummaryList", []):
+                if u.get("Username") in agent_usernames and u.get("Arn") not in managed:
+                    try:
+                        connect_client.delete_user(InstanceId=instance_id, UserId=u["Id"])
+                        print(f"    ↻ 已删除同名座席: {u['Username']}")
+                    except Exception as e:
+                        print(f"    ⚠ 删除座席 {u.get('Username')} 失败: {e}")
+    except Exception as e:
+        print(f"    ⚠ 列举座席失败: {e}")
+
+    # 2. 路由配置（Routing Profile）——引用队列，需先于队列删除
+    try:
+        paginator = connect_client.get_paginator("list_routing_profiles")
+        for page in paginator.paginate(InstanceId=instance_id):
+            for rp in page.get("RoutingProfileSummaryList", []):
+                if rp.get("Name") == routing_profile_name and rp.get("Arn") not in managed:
+                    try:
+                        connect_client.delete_routing_profile(
+                            InstanceId=instance_id, RoutingProfileId=rp["Id"])
+                        print(f"    ↻ 已删除同名路由配置: {rp['Name']}")
+                    except Exception as e:
+                        print(f"    ⚠ 删除路由配置失败: {e}")
+    except Exception as e:
+        print(f"    ⚠ 列举路由配置失败: {e}")
+
+    # 3. 队列（Queue）——引用营业时间，需先于营业时间删除
+    try:
+        paginator = connect_client.get_paginator("list_queues")
+        for page in paginator.paginate(InstanceId=instance_id, QueueTypes=["STANDARD"]):
+            for q in page.get("QueueSummaryList", []):
+                if q.get("Name") == queue_name and q.get("Arn") not in managed:
+                    try:
+                        connect_client.delete_queue(InstanceId=instance_id, QueueId=q["Id"])
+                        print(f"    ↻ 已删除同名队列: {q['Name']}")
+                    except Exception as e:
+                        print(f"    ⚠ 删除队列失败: {e}")
+    except Exception as e:
+        print(f"    ⚠ 列举队列失败: {e}")
+
+    # 4. 营业时间（Hours of Operation）
+    try:
+        paginator = connect_client.get_paginator("list_hours_of_operations")
+        for page in paginator.paginate(InstanceId=instance_id):
+            for h in page.get("HoursOfOperationSummaryList", []):
+                if h.get("Name", "").startswith(prefix) and h.get("Arn") not in managed:
+                    try:
+                        connect_client.delete_hours_of_operation(
+                            InstanceId=instance_id, HoursOfOperationId=h["Id"])
+                        print(f"    ↻ 已删除同名营业时间: {h['Name']}")
+                    except Exception as e:
+                        print(f"    ⚠ 删除营业时间失败: {e}")
+    except Exception as e:
+        print(f"    ⚠ 列举营业时间失败: {e}")
+
+    # 5. 联系流（Contact Flows）——入站流引用其它流，需最先删除
+    try:
+        flows_to_delete = []
+        paginator = connect_client.get_paginator("list_contact_flows")
+        for page in paginator.paginate(InstanceId=instance_id):
+            for cf in page.get("ContactFlowSummaryList", []):
+                if cf.get("Name") in flow_names and cf.get("Arn") not in managed:
+                    flows_to_delete.append(cf)
+        flows_to_delete.sort(key=lambda c: 0 if c["Name"].endswith("Inbound Flow") else 1)
+        for cf in flows_to_delete:
+            try:
+                connect_client.delete_contact_flow(
+                    InstanceId=instance_id, ContactFlowId=cf["Id"])
+                print(f"    ↻ 已删除同名联系流: {cf['Name']}")
+            except Exception as e:
+                print(f"    ⚠ 删除联系流 {cf.get('Name')} 失败: {e}")
+    except Exception as e:
+        print(f"    ⚠ 列举联系流失败: {e}")
+
+    # 6. Lambda 函数（先解除与 Connect 实例的关联，再删除）
+    try:
+        lambda_client = boto3.client("lambda")
+        fn = lambda_client.get_function(FunctionName=lambda_name)
+        fn_arn = fn["Configuration"]["FunctionArn"]
+        if fn_arn not in managed:
+            try:
+                assoc = connect_client.list_lambda_functions(InstanceId=instance_id)
+                for arn in assoc.get("LambdaFunctions", []):
+                    if arn == fn_arn:
+                        connect_client.disassociate_lambda_function(
+                            InstanceId=instance_id, FunctionArn=fn_arn)
+            except Exception:
+                pass
+            try:
+                lambda_client.delete_function(FunctionName=lambda_name)
+                print(f"    ↻ 已删除同名 Lambda 函数: {lambda_name}")
+            except Exception as e:
+                print(f"    ⚠ 删除 Lambda 函数失败: {e}")
+    except Exception:
+        # Lambda 不存在——无需处理
+        pass
+
+
 def prompt_input(msg, default=None):
     """带默认值的输入提示"""
     if default:
@@ -528,9 +715,12 @@ def deploy(
         "environment_config.json",
     )
 
-    # 复制 agents.csv 到工作目录
-    if os.path.exists(AGENTS_CSV):
-        copy_file(AGENTS_CSV, "agents.csv")
+    # 复制并处理 agents.csv（将 LastName / Username 中的 'Test' 替换为租户名）
+    agent_usernames = prepare_agents_csv(tenant_name)
+
+    # 重名协调：删除不由本 Stack 管理的同名资源，使部署实现「有重名则更新、无重名则创建」
+    reconcile_existing_resources(
+        connect_instance_arn, stack_name, tenant_name, agent_usernames)
 
     # 执行 CDK 部署
     print(f"\n{'='*60}")
