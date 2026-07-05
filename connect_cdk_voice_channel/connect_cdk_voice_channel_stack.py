@@ -6,6 +6,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 from aws_cdk import aws_connect as connect
+from aws_cdk import aws_lambda as _lambda
+from aws_cdk import aws_iam as iam
 import os
 import subprocess
 import streamlit as st
@@ -469,7 +471,7 @@ def create_screenpop_contact_flow(self, file_path, output_file, flow_name, descr
 
         return connect.CfnContactFlow(
             self,
-            f"CfnContactFlow{flow_name}{formatted_now}",
+            f"CfnContactFlow{flow_name}",
             content=flow_content,
             instance_arn=connect_instance_arn,
             description=description,
@@ -504,7 +506,7 @@ def create_survey_contact_flow(self, connect_instance_arn, formatted_now):
 
         return connect.CfnContactFlow(
             self,
-            f"CfnContactFlowSurvey{formatted_now}",
+            "CfnContactFlowSurvey",
             content=flow_content,
             instance_arn=connect_instance_arn,
             description="Survey flow created using cfn",
@@ -566,6 +568,9 @@ class ConnectCdkVoiceChannelStack(Stack):
             # 初始化配置
             config = self._initialize_config()
 
+            # 创建 Lambda 函数（GetAgentNameByAgentId），使用源码目录直接部署
+            self._create_get_agent_name_lambda(config)
+
             # 创建核心资源
             hours_of_operation = self._create_hours_of_operation(config)
             queue = self._create_queue(config, hours_of_operation)
@@ -599,6 +604,54 @@ class ConnectCdkVoiceChannelStack(Stack):
         load_flows()
         return config
 
+    def _create_get_agent_name_lambda(self, config):
+        """创建 GetAgentNameByAgentId Lambda 函数。
+
+        不再从预打包的 zip 文件导入，而是直接引用 lambda/GetAgentNameByAgentId/
+        源码目录，由 CDK 在 synth 阶段自动打包部署（等价于源码直接创建）。
+        """
+        # Lambda 执行角色，授予调用 Connect describe_user 的权限
+        lambda_role = iam.Role(
+            self, "GetAgentNameLambdaRole",
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AWSLambdaBasicExecutionRole")
+            ]
+        )
+        lambda_role.add_to_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["connect:DescribeUser"],
+                resources=["*"]
+            )
+        )
+
+        lambda_source_dir = os.path.join(
+            os.path.dirname(__file__), "..", "lambda", "GetAgentNameByAgentId")
+
+        agent_name_fn = _lambda.Function(
+            self, "GetAgentNameByAgentId",
+            function_name=f"{config['tenant_name']}-GetAgentNameByAgentId",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            handler="lambda_function.lambda_handler",
+            code=_lambda.Code.from_asset(lambda_source_dir),
+            role=lambda_role,
+            description="Resolve agent full name by agent id for Amazon Connect flows"
+        )
+        agent_name_fn.grant_invoke(
+            iam.ServicePrincipal("connect.amazonaws.com"))
+
+        # 关联到 Amazon Connect 实例，使联系流可以调用该 Lambda
+        connect.CfnIntegrationAssociation(
+            self, "GetAgentNameLambdaAssociation",
+            instance_id=config['connect_instance_arn'],
+            integration_type="LAMBDA_FUNCTION",
+            integration_arn=agent_name_fn.function_arn
+        )
+
+        return agent_name_fn
+
     def _create_hours_of_operation(self, config):
         """创建营业时间配置"""
         if not os.path.exists('hours_of_operation.json'):
@@ -621,7 +674,7 @@ class ConnectCdkVoiceChannelStack(Stack):
         ]
 
         return connect.CfnHoursOfOperation(
-            self, f"CfnHoursOfOperation{config['timestamp']}",
+            self, "CfnHoursOfOperation",
             config=hop_props,
             instance_arn=config['connect_instance_arn'],
             name=f"{config['tenant_name']} {hop_data['name']}",
@@ -632,7 +685,7 @@ class ConnectCdkVoiceChannelStack(Stack):
     def _create_queue(self, config, hours_of_operation):
         """创建队列"""
         return connect.CfnQueue(
-            self, f"CfnQueue{config['timestamp']}",
+            self, "CfnQueue",
             hours_of_operation_arn=hours_of_operation.attr_hours_of_operation_arn,
             instance_arn=config['connect_instance_arn'],
             description="Queue created using cfn",
@@ -672,7 +725,7 @@ class ConnectCdkVoiceChannelStack(Stack):
         )
 
         return connect.CfnContactFlow(
-            self, f"CfnContactFlowIVR{config['timestamp']}",
+            self, "CfnContactFlowIVR",
             content=flow_content,
             instance_arn=config['connect_instance_arn'],
             description="IVR flow created using cfn",
@@ -683,7 +736,7 @@ class ConnectCdkVoiceChannelStack(Stack):
     def _create_routing_profile(self, config, queue):
         """创建路由配置文件"""
         return connect.CfnRoutingProfile(
-            self, f"CfnRoutingProfile{config['timestamp']}",
+            self, "CfnRoutingProfile",
             default_outbound_queue_arn=queue.attr_queue_arn,
             description="Routing profile created using cfn",
             instance_arn=config['connect_instance_arn'],
@@ -711,7 +764,7 @@ class ConnectCdkVoiceChannelStack(Stack):
             agent_df = pd.read_csv("agents.csv")
             for index, row in agent_df.iterrows():
                 connect.CfnUser(
-                    self, f"CfnUser{config['timestamp']}{index}",
+                    self, f"CfnUser{index}",
                     instance_arn=config['connect_instance_arn'],
                     phone_config=connect.CfnUser.UserPhoneConfigProperty(
                         phone_type="SOFT_PHONE", auto_accept=False
