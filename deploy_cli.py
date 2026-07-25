@@ -888,15 +888,20 @@ def ensure_dependencies():
         return
 
     print(f"\n  检测到缺少依赖 {missing}，正在安装 requirements.txt ...")
+
+    # 在虚拟环境（venv）中 pip 不允许 --user；仅在非 venv 时使用 --user 安装到用户目录。
+    in_virtualenv = sys.prefix != sys.base_prefix
+    pip_cmd = [sys.executable, "-m", "pip", "install", "-r", req_file]
+    if not in_virtualenv:
+        pip_cmd.insert(4, "--user")
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--user", "-r", req_file],
-            check=True,
-        )
+        subprocess.run(pip_cmd, check=True)
         print("  ✓ 依赖安装完成")
     except subprocess.CalledProcessError as e:
         print(f"  ✗ 依赖安装失败: {e}")
-        print("    请手动运行: pip install --user -r requirements.txt")
+        hint = "pip install -r requirements.txt" if in_virtualenv else "pip install --user -r requirements.txt"
+        print(f"    请手动运行: {hint}")
         sys.exit(1)
 
 
