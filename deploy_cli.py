@@ -872,8 +872,10 @@ def ensure_dependencies():
     """确保 CDK 部署所需的 Python 依赖已安装。
 
     CDK 会以子进程运行 `python3 app.py`，该文件需要 aws_cdk / constructs。
-    若缺失（常见于新的 CloudShell 会话），自动执行 pip install -r requirements.txt，
-    避免出现 ModuleNotFoundError: No module named 'aws_cdk'。
+    在 Homebrew / Debian 等「externally-managed」环境中，pip 会依据 PEP 668
+    拒绝全局或 --user 安装。为兼容这些环境，这里在项目目录下创建独立的虚拟环境
+    .venv，将依赖安装其中，并用该虚拟环境的解释器重新执行本脚本，
+    从而避免 ModuleNotFoundError: No module named 'aws_cdk'。
     """
     import importlib.util
 
@@ -882,27 +884,61 @@ def ensure_dependencies():
     if not missing:
         return
 
-    req_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "requirements.txt")
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    req_file = os.path.join(project_dir, "requirements.txt")
     if not os.path.exists(req_file):
         print(f"  ⚠ 缺少依赖 {missing}，但未找到 requirements.txt，请手动安装。")
         return
 
-    print(f"\n  检测到缺少依赖 {missing}，正在安装 requirements.txt ...")
-
-    # 在虚拟环境（venv）中 pip 不允许 --user；仅在非 venv 时使用 --user 安装到用户目录。
     in_virtualenv = sys.prefix != sys.base_prefix
-    pip_cmd = [sys.executable, "-m", "pip", "install", "-r", req_file]
-    if not in_virtualenv:
-        pip_cmd.insert(4, "--user")
 
+    # 已处于虚拟环境：pip 允许直接安装。
+    if in_virtualenv:
+        print(f"\n  检测到缺少依赖 {missing}，正在安装 requirements.txt ...")
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", req_file], check=True)
+            print("  ✓ 依赖安装完成")
+            return
+        except subprocess.CalledProcessError as e:
+            print(f"  ✗ 依赖安装失败: {e}")
+            print("    请手动运行: pip install -r requirements.txt")
+            sys.exit(1)
+
+    # 非虚拟环境（常见于 Homebrew/系统 Python，受 PEP 668 限制）：
+    # 创建并使用项目本地 .venv，再用其解释器重新执行本脚本。
+    venv_dir = os.path.join(project_dir, ".venv")
+    if os.name == "nt":
+        venv_python = os.path.join(venv_dir, "Scripts", "python.exe")
+        venv_bin = os.path.join(venv_dir, "Scripts")
+    else:
+        venv_python = os.path.join(venv_dir, "bin", "python")
+        venv_bin = os.path.join(venv_dir, "bin")
+
+    if not os.path.exists(venv_python):
+        print(f"\n  检测到缺少依赖 {missing}，正在创建虚拟环境 .venv ...")
+        try:
+            subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"  ✗ 创建虚拟环境失败: {e}")
+            print("    请手动运行: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt")
+            sys.exit(1)
+
+    print("  正在安装 requirements.txt 到 .venv ...")
     try:
-        subprocess.run(pip_cmd, check=True)
+        subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip"], check=True)
+        subprocess.run([venv_python, "-m", "pip", "install", "-r", req_file], check=True)
         print("  ✓ 依赖安装完成")
     except subprocess.CalledProcessError as e:
         print(f"  ✗ 依赖安装失败: {e}")
-        hint = "pip install -r requirements.txt" if in_virtualenv else "pip install --user -r requirements.txt"
-        print(f"    请手动运行: {hint}")
+        print("    请手动运行: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt")
         sys.exit(1)
+
+    # 将 .venv 提前加入 PATH，确保后续 CDK 子进程中的 `python3 app.py` 也使用该环境；
+    # 然后用 .venv 的解释器重新执行本脚本（再次进入时依赖已就绪，会直接跳过）。
+    os.environ["VIRTUAL_ENV"] = venv_dir
+    os.environ["PATH"] = venv_bin + os.pathsep + os.environ.get("PATH", "")
+    print("  ✓ 已切换到 .venv，重新启动部署脚本 ...\n")
+    os.execv(venv_python, [venv_python] + sys.argv)
 
 
 # ─── 主入口 ──────────────────────────────────────────────────────────────────
