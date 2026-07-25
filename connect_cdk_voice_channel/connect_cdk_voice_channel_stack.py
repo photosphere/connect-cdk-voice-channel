@@ -102,7 +102,10 @@ def create_screenpop_contact_flow(self, file_path, output_file, flow_name, descr
         # 替换消息内容
         replacements = {
             "arn_prefix": get_arn_prefix(connect_instance_arn),
-            "contact_queue_name": f"{os.environ['tenant_name']} Queue"
+            "contact_queue_name": f"{os.environ['tenant_name']} Queue",
+            # 弹屏中显示的语言使用部署时（deploy_cli.py）选择的语言，
+            # 而不是未被赋值的 $.LanguageCode 系统属性。
+            "screenpop_language": os.environ.get("selected_language", "")
         }
 
         # 替换 GetAgentNameByAgentId Lambda 的 ARN 占位符与显示名称。
