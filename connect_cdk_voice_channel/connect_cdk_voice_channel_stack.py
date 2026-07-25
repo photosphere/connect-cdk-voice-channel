@@ -84,7 +84,7 @@ def get_arn_prefix(arn):
     return arn.rsplit(':', 2)[0]
 
 
-def create_screenpop_contact_flow(self, file_path, output_file, flow_name, description, connect_instance_arn, formatted_now):
+def create_screenpop_contact_flow(self, file_path, output_file, flow_name, description, connect_instance_arn, formatted_now, get_agent_name_lambda_arn=None):
     """创建联系流程的通用函数"""
     if os.path.exists(file_path):
         flow_data = load_json_file(file_path)
@@ -104,6 +104,14 @@ def create_screenpop_contact_flow(self, file_path, output_file, flow_name, descr
             "arn_prefix": get_arn_prefix(connect_instance_arn),
             "contact_queue_name": f"{os.environ['tenant_name']} Queue"
         }
+
+        # 替换 GetAgentNameByAgentId Lambda 的 ARN 占位符与显示名称。
+        # 实际部署的 Lambda 名称为 {tenant_name}-GetAgentNameByAgentId，
+        # 因此流程中必须引用带租户前缀的真实 ARN 与名称，否则调用会失败。
+        if get_agent_name_lambda_arn is not None:
+            replacements["get_agent_name_lambda_arn"] = get_agent_name_lambda_arn
+            replacements['"displayName": "GetAgentNameByAgentId"'] = \
+                f'"displayName": "{os.environ["tenant_name"]}-GetAgentNameByAgentId"'
 
         for old_text, new_text in replacements.items():
             flow_content = flow_content.replace(old_text, new_text)
@@ -211,14 +219,14 @@ class ConnectCdkVoiceChannelStack(Stack):
             config = self._initialize_config()
 
             # 创建 Lambda 函数（GetAgentNameByAgentId），使用源码目录直接部署
-            self._create_get_agent_name_lambda(config)
+            agent_name_lambda = self._create_get_agent_name_lambda(config)
 
             # 创建核心资源
             hours_of_operation = self._create_hours_of_operation(config)
             queue = self._create_queue(config, hours_of_operation)
 
             # 创建联系流程
-            contact_flows = self._create_contact_flows(config)
+            contact_flows = self._create_contact_flows(config, agent_name_lambda)
             ivr_flow = self._create_ivr_flow(config, queue, contact_flows)
 
             # 创建路由配置文件
@@ -333,7 +341,7 @@ class ConnectCdkVoiceChannelStack(Stack):
             name=f"{config['tenant_name']} Queue"
         )
 
-    def _create_contact_flows(self, config):
+    def _create_contact_flows(self, config, agent_name_lambda=None):
         """创建联系流程"""
         flows = {}
 
@@ -341,7 +349,8 @@ class ConnectCdkVoiceChannelStack(Stack):
         flows['screenpop'] = create_screenpop_contact_flow(
             self, 'screenpop_message_flow.json', 'connect_flow_screenpop_updated.json',
             'ScreenPop Flow', 'ScreenPop flow created using cfn',
-            config['connect_instance_arn'], config['timestamp']
+            config['connect_instance_arn'], config['timestamp'],
+            agent_name_lambda.function_arn if agent_name_lambda is not None else None
         )
 
         # Survey流程
