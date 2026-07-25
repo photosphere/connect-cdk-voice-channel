@@ -51,6 +51,9 @@
             "LastAgentID": {
               "useDynamic": true
             },
+            "LastAgentName": {
+              "useDynamic": true
+            },
             "LastChannel": {
               "useDynamic": true
             },
@@ -66,6 +69,7 @@
           "CustomerPhoneNumber",
           "CustomerEmail",
           "LastAgentID",
+          "LastAgentName",
           "LastChannel",
           "Language",
           "NewCustomer"
@@ -127,6 +131,28 @@
               "useDynamic": true
             }
           }
+        }
+      },
+      "f7c2a1e0-9b3d-4c5a-8e21-1a2b3c4d5e6f": {
+        "position": {
+          "x": 282,
+          "y": 48.8
+        },
+        "parameters": {
+          "LambdaFunctionARN": {
+            "displayName": "GetAgentNameByAgentId"
+          },
+          "LambdaInvocationAttributes": {
+            "LastAgentID": {
+              "useDynamic": true
+            }
+          },
+          "ResponseValidation": {
+            "ResponseType": "STRING_MAP"
+          }
+        },
+        "dynamicMetadata": {
+          "LastAgentID": true
         }
       },
       "9833ec72-a5eb-404d-906e-3153aa12289c": {
@@ -202,6 +228,7 @@
           "CustomerPhoneNumber": "$.Customer.PhoneNumber",
           "CustomerEmail": "$.Customer.EmailAddress",
           "LastAgentID": "$.Customer.CalculatedAttributes._last_agent_id",
+          "LastAgentName": "$.External.LastAgentName",
           "LastChannel": "$.Customer.CalculatedAttributes._last_channel",
           "QueueName": "contact_queue_name",
           "Language": "$.LanguageCode",
@@ -255,7 +282,7 @@
           ],
           "Sections": [
             {
-              "TemplateString": "<table cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);'> <thead> <tr style='background-color: #327194; color: #fff;'> <th colspan='3' style='text-align: left; padding: 10px;'>$.Attributes.HeaderContact</th> </tr> </thead> <tbody> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderHotlineNumber</th> <th style='text-align: left;'>$.Attributes.HeaderQueue</th> <th style='text-align: left;'>$.Attributes.HeaderLanguage</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.HotlineNumber</td> <td style='vertical-align: middle;'>$.Attributes.QueueName</td> <td style='vertical-align: middle;'>$.Attributes.Language</td> </tr> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderCustomer</th> <th style='text-align: left;'>$.Attributes.HeaderPhone</th> <th style='text-align: left;'>$.Attributes.HeaderEmail</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.CustomerFullName</td> <td style='vertical-align: middle;'>$.Attributes.CustomerPhoneNumber</td> <td style='vertical-align: middle;'>$.Attributes.CustomerEmail</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderMostFrequentChannel</th> <th style='text-align: left;'>$.Attributes.HeaderLastChannel</th> <th style='text-align: left;'>$.Attributes.HeaderLastAgentID</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.MostFrequentChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastAgentID</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderNewCustomer</th> <th style='text-align: left;'>$.Attributes.HeaderFrequentCaller</th> <th style='text-align: left;'></th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.NewCustomer</td> <td style='vertical-align: middle;'>$.Attributes.FrequentCaller</td> <td style='vertical-align: middle;'></td> </tr></tbody> </table>"
+              "TemplateString": "<table cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);'> <thead> <tr style='background-color: #327194; color: #fff;'> <th colspan='3' style='text-align: left; padding: 10px;'>$.Attributes.HeaderContact</th> </tr> </thead> <tbody> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderHotlineNumber</th> <th style='text-align: left;'>$.Attributes.HeaderQueue</th> <th style='text-align: left;'>$.Attributes.HeaderLanguage</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.HotlineNumber</td> <td style='vertical-align: middle;'>$.Attributes.QueueName</td> <td style='vertical-align: middle;'>$.Attributes.Language</td> </tr> <tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderCustomer</th> <th style='text-align: left;'>$.Attributes.HeaderPhone</th> <th style='text-align: left;'>$.Attributes.HeaderEmail</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.CustomerFullName</td> <td style='vertical-align: middle;'>$.Attributes.CustomerPhoneNumber</td> <td style='vertical-align: middle;'>$.Attributes.CustomerEmail</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderMostFrequentChannel</th> <th style='text-align: left;'>$.Attributes.HeaderLastChannel</th> <th style='text-align: left;'>$.Attributes.HeaderLastAgent</th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.MostFrequentChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastChannel</td> <td style='vertical-align: middle;'>$.Attributes.LastAgentName</td> </tr><tr style='height: 50px; background-color: #eee; '> <th style='text-align: left;'>$.Attributes.HeaderNewCustomer</th> <th style='text-align: left;'>$.Attributes.HeaderFrequentCaller</th> <th style='text-align: left;'></th> </tr> <tr style='height: 50px; background-color: #f9f9f9;'> <td style='vertical-align: middle;'>$.Attributes.NewCustomer</td> <td style='vertical-align: middle;'>$.Attributes.FrequentCaller</td> <td style='vertical-align: middle;'></td> </tr></tbody> </table>"
             }
           ]
         }
@@ -349,15 +376,38 @@
       "Identifier": "32650649-ad04-4fd3-9b6d-1ecf340aa596",
       "Type": "GetCalculatedAttributesForCustomerProfile",
       "Transitions": {
+        "NextAction": "f7c2a1e0-9b3d-4c5a-8e21-1a2b3c4d5e6f",
+        "Errors": [
+          {
+            "NextAction": "f7c2a1e0-9b3d-4c5a-8e21-1a2b3c4d5e6f",
+            "ErrorType": "NoMatchingError"
+          },
+          {
+            "NextAction": "f7c2a1e0-9b3d-4c5a-8e21-1a2b3c4d5e6f",
+            "ErrorType": "NoneFoundError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "get_agent_name_lambda_arn",
+        "InvocationTimeLimitSeconds": "8",
+        "LambdaInvocationAttributes": {
+          "LastAgentID": "$.Customer.CalculatedAttributes._last_agent_id"
+        },
+        "ResponseValidation": {
+          "ResponseType": "STRING_MAP"
+        }
+      },
+      "Identifier": "f7c2a1e0-9b3d-4c5a-8e21-1a2b3c4d5e6f",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
         "NextAction": "System attributes",
         "Errors": [
           {
             "NextAction": "System attributes",
             "ErrorType": "NoMatchingError"
-          },
-          {
-            "NextAction": "System attributes",
-            "ErrorType": "NoneFoundError"
           }
         ]
       }

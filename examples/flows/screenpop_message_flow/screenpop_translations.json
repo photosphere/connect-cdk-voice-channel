@@ -9,7 +9,7 @@
     "HeaderEmail": "Email",
     "HeaderMostFrequentChannel": "Most Frequent Channel",
     "HeaderLastChannel": "Last Channel",
-    "HeaderLastAgentID": "Last Agent ID",
+    "HeaderLastAgent": "Last Agent",
     "HeaderNewCustomer": "New Customer",
     "HeaderFrequentCaller": "Frequent Caller"
   },
@@ -23,7 +23,7 @@
     "HeaderEmail": "邮箱",
     "HeaderMostFrequentChannel": "最常用渠道",
     "HeaderLastChannel": "上次渠道",
-    "HeaderLastAgentID": "上次座席ID",
+    "HeaderLastAgent": "上次座席",
     "HeaderNewCustomer": "新客户",
     "HeaderFrequentCaller": "常客"
   },
@@ -37,7 +37,7 @@
     "HeaderEmail": "電郵",
     "HeaderMostFrequentChannel": "最常用渠道",
     "HeaderLastChannel": "上次渠道",
-    "HeaderLastAgentID": "上次座席ID",
+    "HeaderLastAgent": "上次座席",
     "HeaderNewCustomer": "新客戶",
     "HeaderFrequentCaller": "常客"
   },
@@ -51,7 +51,7 @@
     "HeaderEmail": "E-Mail",
     "HeaderMostFrequentChannel": "Häufigster Kanal",
     "HeaderLastChannel": "Letzter Kanal",
-    "HeaderLastAgentID": "Letzte Agent-ID",
+    "HeaderLastAgent": "Letzter Agent",
     "HeaderNewCustomer": "Neuer Kunde",
     "HeaderFrequentCaller": "Stammkunde"
   },
@@ -65,7 +65,7 @@
     "HeaderEmail": "メール",
     "HeaderMostFrequentChannel": "最頻繁チャネル",
     "HeaderLastChannel": "最後のチャネル",
-    "HeaderLastAgentID": "最後のエージェントID",
+    "HeaderLastAgent": "前回の担当者",
     "HeaderNewCustomer": "新規顧客",
     "HeaderFrequentCaller": "常連客"
   },
@@ -79,7 +79,7 @@
     "HeaderEmail": "이메일",
     "HeaderMostFrequentChannel": "가장 빈번한 채널",
     "HeaderLastChannel": "마지막 채널",
-    "HeaderLastAgentID": "마지막 상담원 ID",
+    "HeaderLastAgent": "이전 상담원",
     "HeaderNewCustomer": "신규 고객",
     "HeaderFrequentCaller": "단골 고객"
   },
@@ -93,7 +93,7 @@
     "HeaderEmail": "E-mail",
     "HeaderMostFrequentChannel": "Canal le plus fréquent",
     "HeaderLastChannel": "Dernier canal",
-    "HeaderLastAgentID": "ID du dernier agent",
+    "HeaderLastAgent": "Dernier agent",
     "HeaderNewCustomer": "Nouveau client",
     "HeaderFrequentCaller": "Client fréquent"
   },
@@ -107,7 +107,7 @@
     "HeaderEmail": "Correo electrónico",
     "HeaderMostFrequentChannel": "Canal más frecuente",
     "HeaderLastChannel": "Último canal",
-    "HeaderLastAgentID": "ID del último agente",
+    "HeaderLastAgent": "Último agente",
     "HeaderNewCustomer": "Cliente nuevo",
     "HeaderFrequentCaller": "Cliente frecuente"
   },
@@ -121,7 +121,7 @@
     "HeaderEmail": "البريد الإلكتروني",
     "HeaderMostFrequentChannel": "القناة الأكثر استخداماً",
     "HeaderLastChannel": "القناة الأخيرة",
-    "HeaderLastAgentID": "معرف الوكيل الأخير",
+    "HeaderLastAgent": "الوكيل الأخير",
     "HeaderNewCustomer": "عميل جديد",
     "HeaderFrequentCaller": "عميل دائم"
   },
@@ -135,7 +135,7 @@
     "HeaderEmail": "E-mail",
     "HeaderMostFrequentChannel": "Canal mais frequente",
     "HeaderLastChannel": "Último canal",
-    "HeaderLastAgentID": "ID do último agente",
+    "HeaderLastAgent": "Último agente",
     "HeaderNewCustomer": "Novo cliente",
     "HeaderFrequentCaller": "Cliente frequente"
   },
@@ -149,7 +149,7 @@
     "HeaderEmail": "E-mail",
     "HeaderMostFrequentChannel": "Canale più frequente",
     "HeaderLastChannel": "Ultimo canale",
-    "HeaderLastAgentID": "ID ultimo agente",
+    "HeaderLastAgent": "Ultimo agente",
     "HeaderNewCustomer": "Nuovo cliente",
     "HeaderFrequentCaller": "Cliente abituale"
   }
