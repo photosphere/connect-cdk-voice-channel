@@ -1,3 +1,5 @@
-aws-cdk-lib>=2.220.0
+# 保留 CDK CLI 2.1124.1（最高支持 cloud assembly schema 53.x.x）。
+# aws-cdk-lib 2.258.0+ 会生成 schema 54.0.0，需 CLI >= 2.1133.0，故封顶在 < 2.258.0（解析到 2.257.x，仍为 schema 53）。
+aws-cdk-lib>=2.220.0,<2.258.0
 constructs>=10.0.0,<11.0.0
 boto3

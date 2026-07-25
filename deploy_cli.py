@@ -60,6 +60,21 @@ HOP_REGION_MAP = {
 
 # ─── 工具函数 ────────────────────────────────────────────────────────────────
 
+def get_cdk_command():
+    """返回可用的 CDK CLI 命令。
+
+    优先使用项目本地安装的 CLI（node_modules/.bin/cdk），其版本已固定为
+    与 aws-cdk-lib 兼容（>= 2.1133.0），避免因全局/npx 缓存中的旧版 CLI
+    导致 "Cloud assembly schema version mismatch" 部署失败。
+    若本地未安装则回退到 PATH 中的 cdk。
+    """
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    local_cdk = os.path.join(project_dir, "node_modules", ".bin", "cdk")
+    if os.path.isfile(local_cdk) and os.access(local_cdk, os.X_OK):
+        return local_cdk
+    return "cdk"
+
+
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -729,7 +744,7 @@ def deploy(
 
     try:
         result = subprocess.run(
-            ["cdk", "deploy", "--require-approval", "never"],
+            [get_cdk_command(), "deploy", "--require-approval", "never"],
             capture_output=False,
         )
         if result.returncode == 0:
@@ -738,8 +753,8 @@ def deploy(
             print(f"\n  ✗ CDK 部署失败，请检查 CloudFormation 控制台获取详细信息。")
             sys.exit(1)
     except FileNotFoundError:
-        print("  ✗ 未找到 cdk 命令，请确保已安装 AWS CDK CLI:")
-        print("    npm install -g aws-cdk")
+        print("  ✗ 未找到 cdk 命令，请在项目根目录安装本地 AWS CDK CLI:")
+        print("    npm install")
         sys.exit(1)
     except KeyboardInterrupt:
         print("\n  部署已被用户中断。")
@@ -850,7 +865,7 @@ def destroy():
 
     try:
         result = subprocess.run(
-            ["cdk", "destroy", "--force"],
+            [get_cdk_command(), "destroy", "--force"],
             capture_output=False,
         )
         if result.returncode == 0:
@@ -858,7 +873,7 @@ def destroy():
         else:
             print(f"\n  ✗ 销毁失败，请检查 CloudFormation 控制台。")
     except FileNotFoundError:
-        print("  ✗ 未找到 cdk 命令。")
+        print("  ✗ 未找到 cdk 命令，请在项目根目录运行 'npm install' 安装本地 CDK CLI。")
     finally:
         # 清理本次为 destroy 生成的占位文件
         for fname in created_placeholders:

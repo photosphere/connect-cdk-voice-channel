@@ -1,0 +1,9 @@
+{
+  "name": "connect-cdk-voice-channel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local AWS CDK CLI toolchain for the Connect voice channel project",
+  "devDependencies": {
+    "aws-cdk": "2.1124.1"
+  }
+}
