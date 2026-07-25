@@ -57,9 +57,6 @@
             "LastChannel": {
               "useDynamic": true
             },
-            "Language": {
-              "useDynamic": true
-            },
             "NewCustomer": {
               "useDynamic": true
             }
@@ -71,7 +68,6 @@
           "LastAgentID",
           "LastAgentName",
           "LastChannel",
-          "Language",
           "NewCustomer"
         ]
       },
@@ -231,7 +227,7 @@
           "LastAgentName": "$.External.LastAgentName",
           "LastChannel": "$.Customer.CalculatedAttributes._last_channel",
           "QueueName": "contact_queue_name",
-          "Language": "$.LanguageCode",
+          "Language": "screenpop_language",
           "HotlineNumber": "$.SystemEndpoint.Address",
           "NewCustomer": "$.Customer.CalculatedAttributes._new_customer",
           "MostFrequentChannel": "$.Customer.CalculatedAttributes._most_frequent_channel",
