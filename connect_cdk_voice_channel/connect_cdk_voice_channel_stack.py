@@ -275,7 +275,7 @@ class ConnectCdkVoiceChannelStack(Stack):
         agent_name_fn = _lambda.Function(
             self, "GetAgentNameByAgentId",
             function_name=f"{config['tenant_name']}-GetAgentNameByAgentId",
-            runtime=_lambda.Runtime.PYTHON_3_12,
+            runtime=_lambda.Runtime.PYTHON_3_14,
             handler="lambda_function.lambda_handler",
             code=_lambda.Code.from_asset(lambda_source_dir),
             role=lambda_role,
