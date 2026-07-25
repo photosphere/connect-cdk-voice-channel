@@ -866,6 +866,40 @@ def destroy():
                 os.remove(fname)
 
 
+# ─── 依赖检查 ────────────────────────────────────────────────────────────────
+
+def ensure_dependencies():
+    """确保 CDK 部署所需的 Python 依赖已安装。
+
+    CDK 会以子进程运行 `python3 app.py`，该文件需要 aws_cdk / constructs。
+    若缺失（常见于新的 CloudShell 会话），自动执行 pip install -r requirements.txt，
+    避免出现 ModuleNotFoundError: No module named 'aws_cdk'。
+    """
+    import importlib.util
+
+    required_modules = ["aws_cdk", "constructs"]
+    missing = [m for m in required_modules if importlib.util.find_spec(m) is None]
+    if not missing:
+        return
+
+    req_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "requirements.txt")
+    if not os.path.exists(req_file):
+        print(f"  ⚠ 缺少依赖 {missing}，但未找到 requirements.txt，请手动安装。")
+        return
+
+    print(f"\n  检测到缺少依赖 {missing}，正在安装 requirements.txt ...")
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--user", "-r", req_file],
+            check=True,
+        )
+        print("  ✓ 依赖安装完成")
+    except subprocess.CalledProcessError as e:
+        print(f"  ✗ 依赖安装失败: {e}")
+        print("    请手动运行: pip install --user -r requirements.txt")
+        sys.exit(1)
+
+
 # ─── 主入口 ──────────────────────────────────────────────────────────────────
 
 def main():
@@ -877,6 +911,7 @@ def main():
     if len(sys.argv) > 1:
         cmd = sys.argv[1].lower()
         if cmd == "destroy":
+            ensure_dependencies()
             destroy()
             return
         elif cmd == "clean":
@@ -889,6 +924,9 @@ def main():
             print("  python deploy_cli.py clean     清理临时文件")
             print("  python deploy_cli.py help      显示帮助")
             return
+
+    # 部署前确保 CDK 依赖已安装
+    ensure_dependencies()
 
     # 步骤 1: 确认 Connect 实例
     connect_instance_arn, security_profile_arn = step1_connect_instance()
