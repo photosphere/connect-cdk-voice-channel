@@ -637,6 +637,7 @@ def deploy(
     connect_instance_arn,
     security_profile_arn,
     tts_voice,
+    selected_lang,
     region_key,
     enable_screenpop,
     enable_survey,
@@ -711,6 +712,7 @@ def deploy(
     os.environ["ivr_open_hour_message"] = open_hour_msg
     os.environ["ivr_error_message"] = error_msg
     os.environ["language_region_key"] = region_key
+    os.environ["selected_language"] = selected_lang
 
     if enable_survey:
         os.environ["survey_message"] = survey_message
@@ -726,6 +728,7 @@ def deploy(
             "deploy_survey_flow": str(enable_survey),
             "deploy_screen_flow": str(enable_screenpop),
             "language_region_key": region_key,
+            "selected_language": selected_lang,
         },
         "environment_config.json",
     )
@@ -1001,6 +1004,7 @@ def main():
         connect_instance_arn,
         security_profile_arn,
         tts_voice,
+        selected_lang,
         region_key,
         enable_screenpop,
         enable_survey,
