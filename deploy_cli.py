@@ -884,6 +884,58 @@ def destroy():
                 os.remove(fname)
 
 
+# ─── 磁盘/缓存检查 ────────────────────────────────────────────────────────────
+
+# CloudShell 的持久化家目录仅有约 1GB，缓存过大时会导致 CDK/jsii 解压
+# aws-cdk-lib 时报 "ENOSPC: no space left on device"。部署前检查缓存目录，
+# 超过阈值则自动清空以释放空间。
+CACHE_DIR = os.path.expanduser("~/.cache")
+CACHE_SIZE_LIMIT_BYTES = 100 * 1024 * 1024  # 100MB
+
+
+def get_dir_size(path):
+    """递归计算目录占用的字节数（无法访问的文件将被跳过）。"""
+    total = 0
+    for dirpath, dirnames, filenames in os.walk(path, onerror=lambda e: None):
+        for name in filenames:
+            fp = os.path.join(dirpath, name)
+            try:
+                # 使用 lstat 避免跟随符号链接重复统计
+                total += os.lstat(fp).st_size
+            except (OSError, FileNotFoundError):
+                continue
+    return total
+
+
+def check_and_clear_cache():
+    """检查缓存目录大小，超过 100MB 时清空其内容以释放磁盘空间。"""
+    if not os.path.isdir(CACHE_DIR):
+        return
+
+    size = get_dir_size(CACHE_DIR)
+    size_mb = size / (1024 * 1024)
+
+    if size <= CACHE_SIZE_LIMIT_BYTES:
+        print(f"  缓存目录 {CACHE_DIR} 当前占用 {size_mb:.1f}MB，未超过 100MB 限制。")
+        return
+
+    print(f"\n  ⚠ 缓存目录 {CACHE_DIR} 占用 {size_mb:.1f}MB，已超过 100MB，正在清空 ...")
+    cleared = 0
+    for entry in os.listdir(CACHE_DIR):
+        target = os.path.join(CACHE_DIR, entry)
+        try:
+            if os.path.isdir(target) and not os.path.islink(target):
+                shutil.rmtree(target, ignore_errors=True)
+            else:
+                os.remove(target)
+            cleared += 1
+        except OSError as e:
+            print(f"    ⚠ 无法删除 {target}: {e}")
+
+    freed_mb = (size - get_dir_size(CACHE_DIR)) / (1024 * 1024)
+    print(f"  ✓ 已清理 {cleared} 项缓存，释放约 {freed_mb:.1f}MB 空间。")
+
+
 # ─── 依赖检查 ────────────────────────────────────────────────────────────────
 
 def ensure_dependencies():
@@ -983,6 +1035,9 @@ def main():
             print("  python deploy_cli.py clean     清理临时文件")
             print("  python deploy_cli.py help      显示帮助")
             return
+
+    # 部署前检查缓存目录大小，必要时清空以避免磁盘空间不足
+    check_and_clear_cache()
 
     # 部署前确保 CDK 依赖已安装
     ensure_dependencies()
