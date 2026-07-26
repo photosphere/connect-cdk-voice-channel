@@ -1,18 +1,14 @@
-import json
 import boto3
 
 connect = boto3.client('connect')
 
 
 def get_agent_name(agent_id, instance_id):
-    if agent_id == "":
+    if not agent_id:
         return ""
-    else:
-        response = connect.describe_user(
-            UserId=agent_id,
-            InstanceId=instance_id
-        )
-        return response['User']['IdentityInfo']['FirstName'] + " " + response['User']['IdentityInfo']['LastName']
+    response = connect.describe_user(UserId=agent_id, InstanceId=instance_id)
+    info = response['User']['IdentityInfo']
+    return f"{info['FirstName']} {info['LastName']}"
 
 
 def get_instance_id(instance_arn):
