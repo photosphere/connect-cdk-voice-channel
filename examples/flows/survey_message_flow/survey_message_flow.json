@@ -120,7 +120,8 @@
         {
             "Parameters": {
                 "Attributes": {
-                    "AgentSurveyResult": "1"
+                    "AgentSurveyScore": "1",
+                    "AgentSurveyResult": "survey_result_1"
                 }
             },
             "Identifier": "5fca141e-7058-4030-a1fc-917c5607e79f",
@@ -138,7 +139,8 @@
         {
             "Parameters": {
                 "Attributes": {
-                    "AgentSurveyResult": "2"
+                    "AgentSurveyScore": "2",
+                    "AgentSurveyResult": "survey_result_2"
                 }
             },
             "Identifier": "393fc6aa-fc52-4711-afeb-c65f87d5d027",
@@ -156,7 +158,8 @@
         {
             "Parameters": {
                 "Attributes": {
-                    "AgentSurveyResult": "3"
+                    "AgentSurveyScore": "3",
+                    "AgentSurveyResult": "survey_result_3"
                 }
             },
             "Identifier": "4d30ba71-3969-462e-b051-c932fcefec2e",
@@ -174,7 +177,8 @@
         {
             "Parameters": {
                 "Attributes": {
-                    "AgentSurveyResult": "-1"
+                    "AgentSurveyScore": "-1",
+                    "AgentSurveyResult": "survey_result_na"
                 }
             },
             "Identifier": "ea808d40-137b-4c53-87ca-20137cf719d4",
