@@ -145,11 +145,19 @@ def create_survey_contact_flow(self, connect_instance_arn):
         flow_data = load_json_file('survey_message_flow.json')
         flow_content = json.dumps(flow_data)
 
+        # 满意度评分的本地化文案（写入 AgentSurveyResult 属性，供主管在 admin 页面搜索）。
+        # 若缺失则回退到英文默认值，保证流程占位符一定被替换掉。
+        results = message_data.get('results', {})
+
         # 替换消息内容
         replacements = {
             "Joanna": os.environ["tts_voice"],
             "survey_message": os.environ["survey_message"],
-            "survey_feedback": os.environ["survey_message_feedback"]
+            "survey_feedback": os.environ["survey_message_feedback"],
+            "survey_result_1": results.get("1", "VerySatisfied"),
+            "survey_result_2": results.get("2", "Satisfied"),
+            "survey_result_3": results.get("3", "Unsatisfied"),
+            "survey_result_na": results.get("-1", "N/A"),
         }
 
         for old_text, new_text in replacements.items():
