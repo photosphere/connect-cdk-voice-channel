@@ -582,13 +582,23 @@ def step4_survey(region_key):
         survey_data = get_survey_messages(region_key)
         survey_message = survey_data.get("surveyMessage", "")
         survey_feedback = survey_data.get("surveyMessageFeedback", "")
+        # 满意度评分的本地化文案（按当前部署语言），写入 AgentSurveyResult 属性
+        survey_results = survey_data.get("results", {})
 
         print(f"  ✓ 将部署 Survey 联系流")
         print(f"    评价提示: {survey_message[:50]}...")
         print(f"    反馈消息: {survey_feedback[:50]}...")
+        if survey_results:
+            labels = " / ".join(
+                survey_results.get(k, "") for k in ("1", "2", "3", "-1"))
+            print(f"    评分文案: {labels}")
 
         save_json(
-            {"surveyMessage": survey_message, "surveyMessageFeedback": survey_feedback},
+            {
+                "surveyMessage": survey_message,
+                "surveyMessageFeedback": survey_feedback,
+                "results": survey_results,
+            },
             "survey_message.json",
         )
     else:

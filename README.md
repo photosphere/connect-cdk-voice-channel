@@ -321,6 +321,25 @@ IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过 `langua
 - 按 `3` → 不满意
 - 超时未按键 → 记录为 `-1`
 
+**评分结果写入的联系属性（Contact Attributes）：**
+
+Survey 流程会在通话结束时向联系记录写入两个用户自定义属性：
+
+| 属性名 | 取值 | 用途 |
+|--------|------|------|
+| `AgentSurveyScore` | `1` / `2` / `3` / `-1` | 数值，随联系记录（CTR）导出，供外部 BI 拉取分析 |
+| `AgentSurveyResult` | 本地化文案（如 `VerySatisfied` / `非常满意`） | 人类可读，供主管在 admin 页面按满意度搜索通话 |
+
+- `AgentSurveyResult` 的文案根据步骤 2 选择的语言自动本地化，取自
+  `survey_messages.json` 中对应语言的 `results` 字段（`1` / `2` / `3` / `-1` → 四档文案）。
+- 两个属性均为标准的用户自定义联系属性，会出现在 CTR 的 `Attributes` 区块，BI 可直接消费。
+
+> **让 `AgentSurveyResult` 可在 admin 页面搜索（一次性操作）**：Amazon Connect 目前
+> 没有提供把用户自定义属性登记为「可搜索」的 API，需由具备 *Configure searchable
+> contact attributes* 权限的管理员在控制台操作一次：Contact search → Add filter →
+> Custom contact attribute → Specify searchable attribute keys → 输入 `AgentSurveyResult`
+> （区分大小写）→ Save。登记后，此后所有通话都可按该属性搜索。
+
 ---
 
 ### 部署确认与执行
@@ -415,17 +434,30 @@ IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过 `langua
   "us": {
     "language": "English",
     "surveyMessage": "Please rate your call experience from 1 to 3. ...",
-    "surveyMessageFeedback": "Thanks for your feedback. Have a good day. Bye."
+    "surveyMessageFeedback": "Thanks for your feedback. Have a good day. Bye.",
+    "results": {
+      "1": "VerySatisfied",
+      "2": "Satisfied",
+      "3": "Unsatisfied",
+      "-1": "N/A"
+    }
   },
   "cn": {
     "language": "Chinese (Mandarin)",
     "surveyMessage": "请对我们的服务进行评价。非常满意请按1，...",
-    "surveyMessageFeedback": "感谢您的评价。祝您生活愉快，再见。"
+    "surveyMessageFeedback": "感谢您的评价。祝您生活愉快，再见。",
+    "results": {
+      "1": "非常满意",
+      "2": "满意",
+      "3": "不满意",
+      "-1": "无"
+    }
   }
 }
 ```
 
-目前支持的 language key：`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`ar`、`pt`、`it`（共 11 种语言）。
+- `results` 字段定义 `AgentSurveyResult` 属性的本地化文案（`1` / `2` / `3` 对应三档满意度，`-1` 对应超时未评价）。
+- 目前支持的 language key：`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`ar`、`pt`、`it`（共 11 种语言）。
 
 ---
 
@@ -484,7 +516,10 @@ python deploy_cli.py clean
 > 编辑 `examples/flows/welcome_message_flow/ivr_messages.json`，找到对应的 language key（如 `us`、`cn`、`jp`），修改其中的 `welcomeMessage`、`openHourMessage`、`errorMessage` 字段。
 
 **Q: 如何自定义 Survey 消息内容**
-> 编辑 `examples/flows/survey_message_flow/survey_messages.json`，找到对应的 language key，修改 `surveyMessage` 和 `surveyMessageFeedback` 字段。
+> 编辑 `examples/flows/survey_message_flow/survey_messages.json`，找到对应的 language key，修改 `surveyMessage` 和 `surveyMessageFeedback` 字段。如需调整满意度文案（写入 `AgentSurveyResult` 属性的值），修改该语言的 `results` 字段即可。
+
+**Q: 评分结果存在哪里，如何做报表 / 搜索**
+> 每通电话结束时会写入两个联系属性：`AgentSurveyScore`（数值 1/2/3/-1，供 BI 从 CTR 拉取）和 `AgentSurveyResult`（本地化文案，供主管在 admin 页面搜索）。要让 `AgentSurveyResult` 出现在搜索过滤器中，需管理员在控制台把该属性 key 登记为可搜索一次（详见「满意度评价」章节的说明）。
 
 **Q: 如何添加新语言的 IVR/Survey 消息**
 > 在 `ivr_messages.json` 和 `survey_messages.json` 中新增一个 language key 及其消息内容，然后在 `deploy_cli.py` 的 `LANGUAGE_REGION_MAP` 中添加语言名称到该 key 的映射。
