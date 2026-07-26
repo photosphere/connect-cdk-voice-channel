@@ -10,8 +10,6 @@ import csv
 import json
 import shutil
 import subprocess
-import time
-from datetime import datetime
 
 import boto3
 
@@ -63,9 +61,10 @@ HOP_REGION_MAP = {
 def get_cdk_command():
     """返回可用的 CDK CLI 命令。
 
-    优先使用项目本地安装的 CLI（node_modules/.bin/cdk），其版本已固定为
-    与 aws-cdk-lib 兼容（>= 2.1133.0），避免因全局/npx 缓存中的旧版 CLI
-    导致 "Cloud assembly schema version mismatch" 部署失败。
+    优先使用项目本地安装的 CLI（node_modules/.bin/cdk，见 package.json 中固定的
+    版本），其 cloud assembly schema 版本与 requirements.txt 中的 aws-cdk-lib
+    保持兼容，避免因全局/npx 缓存中的其它版本 CLI 导致
+    "Cloud assembly schema version mismatch" 部署失败。
     若本地未安装则回退到 PATH 中的 cdk。
     """
     project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -115,11 +114,6 @@ def get_screenpop_translations(region_key):
     """从 screenpop_translations.json 中按 language key 获取弹屏界面翻译"""
     all_translations = load_json(SCREENPOP_TRANSLATIONS_FILE)
     return all_translations.get(region_key, all_translations["us"])
-
-
-def get_arn_prefix(arn):
-    """从 Connect 实例 ARN 中提取前缀 (arn:aws:connect:region:account)"""
-    return arn.rsplit(":", 2)[0]
 
 
 def sanitize_username_token(name):
@@ -635,7 +629,6 @@ def prepare_flow_files(enable_screenpop, enable_survey):
 
 def deploy(
     connect_instance_arn,
-    security_profile_arn,
     tts_voice,
     selected_lang,
     region_key,
@@ -1042,8 +1035,8 @@ def main():
     # 部署前确保 CDK 依赖已安装
     ensure_dependencies()
 
-    # 步骤 1: 确认 Connect 实例
-    connect_instance_arn, security_profile_arn = step1_connect_instance()
+    # 步骤 1: 确认 Connect 实例（安全配置文件信息由 step1 写入 security_profile.json）
+    connect_instance_arn, _ = step1_connect_instance()
 
     # 步骤 2: 选择语言和语音
     tts_voice, selected_lang, region_key = step2_language_voice()
@@ -1057,7 +1050,6 @@ def main():
     # 部署
     deploy(
         connect_instance_arn,
-        security_profile_arn,
         tts_voice,
         selected_lang,
         region_key,
