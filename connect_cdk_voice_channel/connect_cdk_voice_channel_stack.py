@@ -1,9 +1,4 @@
-from aws_cdk import (
-    # Duration,
-    Stack,
-    CfnTag
-    # aws_sqs as sqs,
-)
+from aws_cdk import Stack
 from constructs import Construct
 from aws_cdk import aws_connect as connect
 from aws_cdk import aws_lambda as _lambda
@@ -12,9 +7,16 @@ import os
 import csv
 import json
 import shutil
-from datetime import datetime
 
 # 工具函数
+
+
+def str_to_bool(value):
+    """将配置文件中的字符串（"True"/"False"）安全地转换为布尔值。
+
+    替代直接使用 eval()，避免执行任意代码并对异常输入更健壮。
+    """
+    return str(value).strip().lower() in ("true", "1", "yes")
 
 
 def copy_file(source, destination):
@@ -25,7 +27,7 @@ def copy_file(source, destination):
 
 def load_json_file(file_path):
     """加载JSON文件的通用函数"""
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
@@ -54,7 +56,6 @@ def create_inbound_flow(tab1_button, tab2_button, tab3_button):
     # 复制主流程文件
     for condition, source, dest in flow_configs:
         if condition:
-            print(source)
             copy_file(source, dest)
             break
 
@@ -77,14 +78,14 @@ def load_flows():
     os_data = load_json_file('environment_config.json')
 
     create_inbound_flow(
-        True, eval(os_data['deploy_survey_flow']), eval(os_data['deploy_screen_flow']))
+        True, str_to_bool(os_data['deploy_survey_flow']), str_to_bool(os_data['deploy_screen_flow']))
 
 
 def get_arn_prefix(arn):
     return arn.rsplit(':', 2)[0]
 
 
-def create_screenpop_contact_flow(self, file_path, output_file, flow_name, description, connect_instance_arn, formatted_now, get_agent_name_lambda_arn=None):
+def create_screenpop_contact_flow(self, file_path, output_file, flow_name, description, connect_instance_arn, get_agent_name_lambda_arn=None):
     """创建联系流程的通用函数"""
     if os.path.exists(file_path):
         flow_data = load_json_file(file_path)
@@ -119,7 +120,7 @@ def create_screenpop_contact_flow(self, file_path, output_file, flow_name, descr
         for old_text, new_text in replacements.items():
             flow_content = flow_content.replace(old_text, new_text)
 
-        with open(output_file, 'w') as f:
+        with open(output_file, 'w', encoding='utf-8') as f:
             f.write(flow_content)
 
         return connect.CfnContactFlow(
@@ -134,7 +135,7 @@ def create_screenpop_contact_flow(self, file_path, output_file, flow_name, descr
     return None
 
 
-def create_survey_contact_flow(self, connect_instance_arn, formatted_now):
+def create_survey_contact_flow(self, connect_instance_arn):
     """创建调查联系流程"""
     if os.path.exists('survey_message.json') and os.path.exists('survey_message_flow.json'):
         message_data = load_json_file('survey_message.json')
@@ -154,7 +155,7 @@ def create_survey_contact_flow(self, connect_instance_arn, formatted_now):
         for old_text, new_text in replacements.items():
             flow_content = flow_content.replace(old_text, new_text)
 
-        with open('connect_flow_survey_updated.json', 'w') as f:
+        with open('connect_flow_survey_updated.json', 'w', encoding='utf-8') as f:
             f.write(flow_content)
 
         return connect.CfnContactFlow(
@@ -206,7 +207,7 @@ def create_ivr_contact_flow(cfn_queue, cfn_contact_flow_screenpop=None, cfn_cont
         for old_text, new_text in survey_replacements.items():
             flow_content = flow_content.replace(old_text, new_text)
 
-    with open('inbound_flow_updated.json', 'w') as f:
+    with open('inbound_flow_updated.json', 'w', encoding='utf-8') as f:
         f.write(flow_content)
 
     return flow_content
@@ -247,7 +248,6 @@ class ConnectCdkVoiceChannelStack(Stack):
         config = {
             'connect_instance_arn': get_config_value('connect.json', 'Arn'),
             'security_profile_arn': get_config_value('security_profile.json', 'Arn'),
-            'timestamp': datetime.now().strftime("%Y%m%d%H%M%S"),
             'tenant_name': os.environ.get('tenant_name', 'DefaultTenant')
         }
 
@@ -352,13 +352,13 @@ class ConnectCdkVoiceChannelStack(Stack):
         flows['screenpop'] = create_screenpop_contact_flow(
             self, 'screenpop_message_flow.json', 'connect_flow_screenpop_updated.json',
             'ScreenPop Flow', 'ScreenPop flow created using cfn',
-            config['connect_instance_arn'], config['timestamp'],
+            config['connect_instance_arn'],
             agent_name_lambda.function_arn if agent_name_lambda is not None else None
         )
 
         # Survey流程
         flows['survey'] = create_survey_contact_flow(
-            self, config['connect_instance_arn'], config['timestamp']
+            self, config['connect_instance_arn']
         )
 
         return flows
