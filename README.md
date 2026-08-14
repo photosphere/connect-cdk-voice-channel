@@ -34,6 +34,54 @@ cdk bootstrap
 
 ---
 
+## 创建 Amazon Connect 实例
+
+本工具部署的所有资源（联系流、队列、座席、Lambda 等）都依附在一个已存在的 Amazon Connect 实例上。若您还没有实例，请先按以下步骤创建一个，然后在部署时提供其 ARN（详见「交互式部署流程」步骤 1）。
+
+> 完整官方文档：[Create a Connect instance](https://docs.aws.amazon.com/connect/latest/adminguide/create-connect-instance.html) 与 [Create a Connect Customer instance](https://docs.aws.amazon.com/connect/latest/adminguide/amazon-connect-instances.html)。
+
+### 开始前需要知道
+
+- 每个实例只在其所创建的 AWS 区域内有效，请确保实例区域与您计划部署的区域一致。
+- 创建实例的 IAM 身份需要具备 `AmazonConnect_FullAccess` 托管策略（或等效的最小权限集）。
+- **身份管理方式在创建实例后无法更改**，请提前规划。
+
+### 创建步骤（AWS 控制台）
+
+1. **步骤 1：设置身份管理（Set identity）**
+   打开 [Amazon Connect 控制台](https://console.aws.amazon.com/connect/)，选择 **Add an instance**（首次使用则选择 **Get started**），然后从以下方式中选择一种用户管理方式：
+   - **Store users in Amazon Connect**：由 Connect 直接创建和管理用户账号（最简单，适合开发/测试）。
+   - **Link to an existing directory**：链接到 AWS Directory Service 目录。
+   - **SAML 2.0-based authentication**：通过外部身份提供商（IdP）联合登录。
+
+   若选择前者或 SAML，需为 **Access URL** 指定一个全局唯一的标签（创建后不可更改）。完成后选择 **Next**。
+
+2. **步骤 2：添加管理员（Add administrator）**
+   为实例指定一个管理员账号（提供用户名、密码、邮箱），该账号会自动获得 Admin 安全配置文件。也可选择 **No administrator** 稍后再配置。选择 **Next**。
+
+3. **步骤 3：设置电话（Set telephony）**
+   根据需要勾选：
+   - **Receive inbound calls**：允许接听客户来电（本项目为语音入站流程，**建议启用**）。
+   - **Make outbound calls**：允许座席外呼。
+
+   选择 **Next**。
+
+4. **步骤 4：数据存储（Data storage）**
+   Connect 会默认创建用于存放通话录音、聊天记录、导出报表和流程日志的 Amazon S3 存储桶，并默认创建 **Customer Profiles** 域（弹屏功能需要，见部署步骤 3）。如无特殊需求可直接使用默认配置，选择 **Next**。
+
+5. **步骤 5：检查并创建（Review and create）**
+   核对配置（注意身份管理方式创建后不可更改），然后选择 **Create instance**。实例创建通常需要几分钟。
+
+### 创建后
+
+- 实例创建完成后，在实例概览页面即可复制 **实例 ARN**，格式如：
+  `arn:aws:connect:us-east-1:123456789012:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+  （查找方法另见 [Find your instance ID or ARN](https://docs.aws.amazon.com/connect/latest/adminguide/find-instance-arn.html)）。
+- 建议为实例[申请或导入电话号码](https://docs.aws.amazon.com/connect/latest/adminguide/ag-overview-numbers.html)，以便后续测试入站语音流程。
+- 拿到实例 ARN 后，即可运行 `python deploy_cli.py` 开始部署。
+
+---
+
 ## 所需 AWS 权限
 
 运行 `deploy_cli.py` 需要的权限分为两部分：
@@ -401,6 +449,98 @@ Survey 流程会在通话结束时向联系记录写入两个用户自定义属�
 - **不由本 Stack 管理的同名资源**（例如手动创建或历史遗留）：部署前工具会通过 boto3 按依赖
   顺序（座席 → 路由配置 → 队列 → 营业时间 → 联系流 → Lambda）自动删除，随后由 CDK 重新
   创建，从而避免重名冲突导致部署失败。此清理过程为尽力而为，单项失败不会中断部署。
+
+---
+
+## examples 目录文件说明
+
+`examples/` 目录集中存放了部署所需的全部示例数据与流程模板。`deploy_cli.py` 会在部署时读取这些文件，按您选择的语言/功能组合生成实际部署内容。目录结构如下：
+
+```
+examples/
+├── agents/
+│   └── agents.csv                         # 座席清单（批量创建 Connect 用户）
+├── languages/
+│   └── languages_neural.csv               # Amazon Polly Neural 语音清单（选取 TTS 语音）
+├── hoursofoperation/                       # 营业时间模板（按区域/时区）
+│   ├── hours_of_operation_us.json          #   America/New_York
+│   ├── hours_of_operation_hk.json          #   Asia/Hong_Kong
+│   ├── hours_of_operation_dubai.json       #   Asia/Dubai
+│   └── hours_of_operation_de.json          #   Europe/Dublin
+└── flows/                                  # 联系流（Contact Flow）模板与消息文案
+    ├── ivr_screenpop_flow.json             # 主入站流程：弹屏
+    ├── ivr_survey_flow.json                # 主入站流程：满意度评价
+    ├── ivr_survey_screenpop_flow.json      # 主入站流程：弹屏 + 满意度评价
+    ├── welcome_message_flow/
+    │   ├── welcome_message_flow.json       # 主入站流程：基础版（无弹屏、无满意度）
+    │   └── ivr_messages.json               # IVR 欢迎/营业时间/错误 语音文案（多语言）
+    ├── survey_message_flow/
+    │   ├── survey_message_flow.json        # 满意度评价子流程
+    │   └── survey_messages.json            # 满意度评价语音文案与结果文案（多语言）
+    └── screenpop_message_flow/
+        ├── screenpop_message_flow.json     # 弹屏子流程
+        └── screenpop_translations.json     # 弹屏界面字段的多语言翻译
+```
+
+### 数据文件
+
+| 文件 | 作用 | 说明 |
+|------|------|------|
+| `agents/agents.csv` | 座席清单 | 批量创建 Connect 用户（SOFT_PHONE 模式），详见「座席数据格式」章节 |
+| `languages/languages_neural.csv` | Neural 语音清单 | 列出各语言的 Amazon Polly Neural 语音。部署步骤 2 选定语言后，工具自动取该语言的**第一个** Neural 语音作为 TTS 声音 |
+
+`languages_neural.csv` 的列格式：
+
+```csv
+LanguageName,LanguageCode,Voice,Gender
+Chinese (Mandarin),cmn-CN,Zhiyu,Female
+English (US),en-US,Joanna*,Female
+```
+
+> 语音名称后缀 `*` / `**` 为源数据中标注的语音特性（如是否支持特定引擎），工具在使用时会做清理。
+
+### 营业时间模板 `hoursofoperation/`
+
+每个文件定义一份营业时间，字段包括 `name`、`description`、`timeZone` 以及 `timeslices`（按星期几的起止时分）。示例默认均为**周一至周五 9:00–17:00**，仅时区不同。部署时根据步骤 2 选定的语言，通过 `deploy_cli.py` 的 `HOP_REGION_MAP` 映射到对应文件（映射关系见步骤 2 的表格）。
+
+```json
+{
+  "name": "Basic Hours",
+  "description": "Open hours",
+  "timeZone": "America/New_York",
+  "timeslices": [
+    { "day": "MONDAY", "startH": 9, "startM": 0, "endH": 17, "endM": 0 }
+  ]
+}
+```
+
+### 联系流模板 `flows/`
+
+**主入站流程（4 选 1）**：工具根据部署步骤 3/4 中弹屏与满意度的开关组合，选取一份主入站流程模板复制为工作目录下的 `inbound_flow.json`：
+
+| 弹屏 | 满意度 | 使用的主流程模板 |
+|:---:|:---:|------|
+| 否 | 否 | `welcome_message_flow/welcome_message_flow.json` |
+| 是 | 否 | `ivr_screenpop_flow.json` |
+| 否 | 是 | `ivr_survey_flow.json` |
+| 是 | 是 | `ivr_survey_screenpop_flow.json` |
+
+**子流程（按需附加）**：
+
+| 文件 | 何时使用 | 作用 |
+|------|---------|------|
+| `survey_message_flow/survey_message_flow.json` | 启用满意度评价时 | 通话结束后播放评价语音并采集按键评分的子流程 |
+| `screenpop_message_flow/screenpop_message_flow.json` | 启用弹屏时 | 座席接听时展示客户信息的弹屏子流程 |
+
+**消息/翻译文件（多语言）**：均以顶层 language key（`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`ar`、`pt`、`it`）区分语言，部署时按步骤 2 选定的语言取对应条目注入流程。
+
+| 文件 | 内容 |
+|------|------|
+| `welcome_message_flow/ivr_messages.json` | IVR 的 `welcomeMessage`（欢迎语）、`openHourMessage`（非工作时间提示）、`errorMessage`（高话务/错误提示） |
+| `survey_message_flow/survey_messages.json` | 满意度评价的 `surveyMessage`（评价引导语）、`surveyMessageFeedback`（致谢语）及 `results`（评分本地化文案） |
+| `screenpop_message_flow/screenpop_translations.json` | 弹屏界面各字段标题的本地化翻译（如 Customer、Phone、Last Agent 等） |
+
+> 这三类消息/翻译文件的详细结构见下方「消息配置文件」章节；如需增删语言，除编辑这些 JSON 外，还需在 `deploy_cli.py` 的 `LANGUAGE_REGION_MAP` 中补充语言名称到 key 的映射。
 
 ---
 
