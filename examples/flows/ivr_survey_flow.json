@@ -116,6 +116,54 @@
           "text": "contact_survey_flow_name",
           "id": "contact_survey_flow_id"
         }
+      },
+      "ba129c7d-f2a2-482e-be5b-748e49f61508": {
+        "position": {
+          "x": 826.4,
+          "y": 680
+        },
+        "conditions": [],
+        "conditionMetadata": [
+          {
+            "id": "8a682cfe-f423-4ec5-a26c-dc9708c843f7",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "connect:SMS"
+          }
+        ]
+      },
+      "dbff451f-63b1-4daf-b8c6-af1ab659aae9": {
+        "position": {
+          "x": 1089.6,
+          "y": 720
+        }
+      },
+      "fd1e8036-57d6-419c-a274-78197fff4710": {
+        "position": {
+          "x": 1361.6,
+          "y": 640
+        }
+      },
+      "ff03fe58-f1ca-4a28-987a-fad6f4090153": {
+        "position": {
+          "x": 1880,
+          "y": 640
+        }
+      },
+      "8667e999-2e3c-4ea2-9f86-53aaa30a921c": {
+        "position": {
+          "x": 1361.6,
+          "y": 880
+        }
+      },
+      "5046872a-c708-4595-a5fe-a02fa0f2bb57": {
+        "position": {
+          "x": 1880,
+          "y": 880
+        }
       }
     },
     "Annotations": [],
@@ -152,7 +200,7 @@
     },
     {
       "Parameters": {
-        "Text": "open-hour-message。"
+        "Text": "open-hour-message"
       },
       "Identifier": "badcf7f4-6cae-4693-a494-d771172706b1",
       "Type": "MessageParticipant",
@@ -241,7 +289,7 @@
       "Identifier": "0a68eed7-239f-4398-9364-8f8697d54ee2",
       "Type": "Compare",
       "Transitions": {
-        "NextAction": "2bfec059-0c2c-45c2-bc42-dfed3501ca2e",
+        "NextAction": "ba129c7d-f2a2-482e-be5b-748e49f61508",
         "Conditions": [
           {
             "NextAction": "8cd02574-cbfa-4deb-9dd7-8a7298d6c094",
@@ -255,7 +303,7 @@
         ],
         "Errors": [
           {
-            "NextAction": "2bfec059-0c2c-45c2-bc42-dfed3501ca2e",
+            "NextAction": "ba129c7d-f2a2-482e-be5b-748e49f61508",
             "ErrorType": "NoMatchingCondition"
           }
         ]
@@ -344,6 +392,133 @@
         "Errors": [
           {
             "NextAction": "c1063d2a-6d18-44db-b1fd-f6ef19464f81",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ComparisonValue": "$.SegmentAttributes['connect:Subtype']"
+      },
+      "Identifier": "ba129c7d-f2a2-482e-be5b-748e49f61508",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "2bfec059-0c2c-45c2-bc42-dfed3501ca2e",
+        "Conditions": [
+          {
+            "NextAction": "dbff451f-63b1-4daf-b8c6-af1ab659aae9",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "connect:SMS"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "2bfec059-0c2c-45c2-bc42-dfed3501ca2e",
+            "ErrorType": "NoMatchingCondition"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "dbff451f-63b1-4daf-b8c6-af1ab659aae9",
+      "Type": "CheckHoursOfOperation",
+      "Transitions": {
+        "NextAction": "5046872a-c708-4595-a5fe-a02fa0f2bb57",
+        "Conditions": [
+          {
+            "NextAction": "fd1e8036-57d6-419c-a274-78197fff4710",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "True"
+              ]
+            }
+          },
+          {
+            "NextAction": "8667e999-2e3c-4ea2-9f86-53aaa30a921c",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "False"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "5046872a-c708-4595-a5fe-a02fa0f2bb57",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "sms-welcome-text"
+      },
+      "Identifier": "fd1e8036-57d6-419c-a274-78197fff4710",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "ff03fe58-f1ca-4a28-987a-fad6f4090153",
+        "Errors": [
+          {
+            "NextAction": "ff03fe58-f1ca-4a28-987a-fad6f4090153",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "ff03fe58-f1ca-4a28-987a-fad6f4090153",
+      "Type": "TransferContactToQueue",
+      "Transitions": {
+        "NextAction": "5046872a-c708-4595-a5fe-a02fa0f2bb57",
+        "Errors": [
+          {
+            "NextAction": "5046872a-c708-4595-a5fe-a02fa0f2bb57",
+            "ErrorType": "QueueAtCapacity"
+          },
+          {
+            "NextAction": "5046872a-c708-4595-a5fe-a02fa0f2bb57",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "sms-open-hour-text"
+      },
+      "Identifier": "8667e999-2e3c-4ea2-9f86-53aaa30a921c",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "2c27f89c-81c0-4110-98c3-db2e2fa15ab7",
+        "Errors": [
+          {
+            "NextAction": "2c27f89c-81c0-4110-98c3-db2e2fa15ab7",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "sms-error-text"
+      },
+      "Identifier": "5046872a-c708-4595-a5fe-a02fa0f2bb57",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "2c27f89c-81c0-4110-98c3-db2e2fa15ab7",
+        "Errors": [
+          {
+            "NextAction": "2c27f89c-81c0-4110-98c3-db2e2fa15ab7",
             "ErrorType": "NoMatchingError"
           }
         ]

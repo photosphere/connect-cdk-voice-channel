@@ -265,33 +265,46 @@ python deploy_cli.py help       # 显示帮助信息
 
 ### 步骤 2：选择 IVR 语言和语音
 
-工具会列出所有可用的语言类别供您选择：
+工具会按语言分组列出 10 种可选语言供您选择：
 
 ```
 ============================================================
   步骤 2: 选择 IVR 语言和语音
 ============================================================
 
-  可选语言类别:
-    1. 英语 (English (Australian), English (British), English (Indian)...)
-    2. 中文 (Chinese (Cantonese), Chinese (Mandarin))
-    3. 日语 (Japanese)
-    4. 韩语 (Korean)
-    5. 法语 (French (Belgian), French (Canadian), French)
-    6. 德语 (German, German (Austrian))
-    7. 西班牙语 (Spanish (European), Spanish (Mexican), Spanish (US))
-    8. 阿拉伯语 (Arabic (Gulf))
-    9. 葡萄牙语 (Portuguese (Brazilian), Portuguese (European))
-    10. 意大利语 (Italian)
-    其他: Belgian Dutch (Flemish), Catalan, Danish, ...
+  可选语言:
+     1. 英语
+        1.1 English (US)
+        1.2 English (British)
+        1.3 English (Indian)
+        （其他英语变体可直接输入名称：English (Australian), English (Irish), English (New Zealand), English (South African)）
+     2. 中文
+        2.1 Chinese (Mandarin)
+        2.2 Chinese (Cantonese)
+     3. 日语
+        3.1 Japanese
+     4. 韩语
+        4.1 Korean
+    ...
+     8. 印地语
+        8.1 Hindi
+     9. 葡萄牙语
+        9.1 Portuguese (Brazilian)
+        9.2 Portuguese (European)
+    10. 意大利语
+        10.1 Italian
 
-  请输入语言编号或直接输入语言名称（如 'English (US)', 'Chinese (Mandarin)'）
-  语言选择: 2
+  请输入编号（如 2 或 2.1）或语言名称（如 'English (US)', 'Chinese (Mandarin)'）；只输入组号时默认选择该组第一个
+  语言选择: 2.1
 ```
 
-**两种输入方式：**
-- 输入编号（如 `1` 代表英语），若该类别有多个变体会进一步让您选择
-- 直接输入语言名称（如 `Chinese (Mandarin)`）
+**输入方式：**
+- 输入组号（如 `2`）：选择该组第一个语言（等同 `2.1`，即 Chinese (Mandarin)）
+- 输入组号.序号（如 `2.2`）：选择组内指定语言（Chinese (Cantonese)）
+- 直接输入语言名称（如 `Chinese (Mandarin)`，不区分大小写）；英语组默认只显示 US / British / Indian，其他英语变体（如 `English (Australian)`）可输入完整名称选择
+- 菜单只提供以上 10 种语言（英语、中文、日语、韩语、法语、德语、西班牙语、印地语、葡萄牙语、意大利语）；`languages_neural.csv` 中的其他语言（如 Danish、Dutch、Swedish）不在菜单中，也不能按名称选择
+- 印地语（Hindi）使用印地语（`in`）IVR / SMS / Survey / 弹屏文案，营业时间使用印度时区的 `hours_of_operation_in.json`（Asia/Kolkata，周一至周五 9:00–17:00）
+- 无法匹配时会提示并重新输入
 
 **语音选择逻辑：**
 - 工具自动选取该语言下 `languages_neural.csv` 中的第一个 Neural 语音
@@ -313,7 +326,7 @@ IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过 `langua
 | French 系列 | `fr` | `hours_of_operation_us.json` |
 | German 系列 | `de` | `hours_of_operation_de.json` |
 | Spanish 系列 | `es` | `hours_of_operation_us.json` |
-| Arabic 系列 | `ar` | `hours_of_operation_dubai.json` |
+| Hindi | `in` | `hours_of_operation_in.json` |
 | Portuguese 系列 | `pt` | `hours_of_operation_us.json` |
 | Italian | `it` | `hours_of_operation_us.json` |
 
@@ -338,6 +351,7 @@ IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过 `langua
 **启用后将额外部署：**
 - `screenpop_message_flow.json` → ScreenPop 联系流
 - 主 IVR 流程中会添加 `DefaultAgentUI` 事件钩子，指向 ScreenPop 流
+- 弹屏对所有渠道都显示：客户号码为 `+` 开头的电话号码（且不是匿名号码 `+266696687`）时，先查询/创建 Customer Profile 再显示客户信息；没有号码时（匿名来电、网页聊天、Task、Email 等）跳过 Customer Profile，只显示联系信息，客户字段留空
 
 **前置要求：**
 - 需要在 Amazon Connect 实例中启用 **Customer Profiles** 功能
@@ -368,6 +382,7 @@ IVR 消息和 Survey 消息分别整合在两个 JSON 文件中，通过 `langua
 - 按 `2` → 满意
 - 按 `3` → 不满意
 - 超时未按键 → 记录为 `-1`
+- SMS 联系结束时直接结束 Survey，不发评价消息，也不写 `AgentSurveyScore` / `AgentSurveyResult`
 
 **评分结果写入的联系属性（Contact Attributes）：**
 
@@ -431,7 +446,7 @@ Survey 流程会在通话结束时向联系记录写入两个用户自定义属�
 | Contact Flow (IVR) | `{租户名} Inbound Flow` | 主 IVR 入站流程 |
 | Contact Flow (ScreenPop) | `{租户名} ScreenPop Flow` | 弹屏流程（可选） |
 | Contact Flow (Survey) | `{租户名} Survey Flow` | 满意度评价流程（可选） |
-| Routing Profile | `{租户名} Routing Profile` | 路由配置（VOICE + CHAT） |
+| Routing Profile | `{租户名} Routing Profile` | 路由配置（VOICE + CHAT；队列同时以 VOICE 与 CHAT 通道加入，SMS 联系可分配给座席） |
 | Lambda Function | `{租户名}-GetAgentNameByAgentId` | 根据座席 ID 查询座席姓名，并关联到 Connect 实例 |
 | Users | 来自 `agents.csv` | 座席账号（SOFT_PHONE 模式） |
 
@@ -465,7 +480,7 @@ examples/
 ├── hoursofoperation/                       # 营业时间模板（按区域/时区）
 │   ├── hours_of_operation_us.json          #   America/New_York
 │   ├── hours_of_operation_hk.json          #   Asia/Hong_Kong
-│   ├── hours_of_operation_dubai.json       #   Asia/Dubai
+│   ├── hours_of_operation_in.json          #   Asia/Kolkata
 │   └── hours_of_operation_de.json          #   Europe/Dublin
 └── flows/                                  # 联系流（Contact Flow）模板与消息文案
     ├── ivr_screenpop_flow.json             # 主入站流程：弹屏
@@ -532,15 +547,22 @@ English (US),en-US,Joanna*,Female
 | `survey_message_flow/survey_message_flow.json` | 启用满意度评价时 | 通话结束后播放评价语音并采集按键评分的子流程 |
 | `screenpop_message_flow/screenpop_message_flow.json` | 启用弹屏时 | 座席接听时展示客户信息的弹屏子流程 |
 
-**消息/翻译文件（多语言）**：均以顶层 language key（`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`ar`、`pt`、`it`）区分语言，部署时按步骤 2 选定的语言取对应条目注入流程。
+**消息/翻译文件（多语言）**：均以顶层 language key（`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`in`、`pt`、`it`）区分语言，部署时按步骤 2 选定的语言取对应条目注入流程。
 
 | 文件 | 内容 |
 |------|------|
-| `welcome_message_flow/ivr_messages.json` | IVR 的 `welcomeMessage`（欢迎语）、`openHourMessage`（非工作时间提示）、`errorMessage`（高话务/错误提示） |
+| `welcome_message_flow/ivr_messages.json` | IVR 的 `welcomeMessage`（欢迎语）、`openHourMessage`（非工作时间提示）、`errorMessage`（高话务/错误提示），以及 `smsWelcomeMessage` / `smsOpenHourMessage` / `smsErrorMessage`（SMS 短信文案） |
 | `survey_message_flow/survey_messages.json` | 满意度评价的 `surveyMessage`（评价引导语）、`surveyMessageFeedback`（致谢语）及 `results`（评分本地化文案） |
 | `screenpop_message_flow/screenpop_translations.json` | 弹屏界面各字段标题的本地化翻译（如 Customer、Phone、Last Agent 等） |
 
 > 这三类消息/翻译文件的详细结构见下方「消息配置文件」章节；如需增删语言，除编辑这些 JSON 外，还需在 `deploy_cli.py` 的 `LANGUAGE_REGION_MAP` 中补充语言名称到 key 的映射。
+
+**SMS 短信入站**：
+
+- SMS 是 CHAT 渠道的子类型（`$.Channel == CHAT`，`connect:Subtype == connect:SMS`）。
+- 4 个主入站流程识别到 SMS 后走独立的短信文案分支（欢迎语 / 非营业时间 / 繁忙），营业时间判断与转队列逻辑与语音相同。
+- SMS 号码需要在 AWS End User Messaging SMS 申请并开启 two-way，导入 Connect 后在 Channels → Phone numbers 中手工关联到 `{租户名} Inbound Flow`（本工具不自动关联）。
+- Survey 对 SMS 联系直接结束；弹屏对所有渠道都显示，SMS 联系有号码时会查询/创建 Customer Profile。
 
 ---
 
@@ -556,7 +578,10 @@ English (US),en-US,Joanna*,Female
     "language": "English",
     "welcomeMessage": "Thanks for calling Amazon Connect. ",
     "openHourMessage": "Thanks for calling Amazon Connect. Our office hours are ...",
-    "errorMessage": "Thanks for calling Amazon Connect. We are currently ..."
+    "errorMessage": "Thanks for calling Amazon Connect. We are currently ...",
+    "smsWelcomeMessage": "Thanks for messaging Amazon Connect. An agent will reply to you shortly. ...",
+    "smsOpenHourMessage": "Thanks for messaging Amazon Connect. Our office hours are ...",
+    "smsErrorMessage": "Thanks for messaging Amazon Connect. We are currently receiving ..."
   },
   "cn": {
     "language": "Chinese (Mandarin)",
@@ -566,6 +591,8 @@ English (US),en-US,Joanna*,Female
   }
 }
 ```
+
+主入站流程识别到 `connect:Subtype == connect:SMS` 时使用 `sms*` 系列文案；某语言缺少 sms 字段时回退到对应的语音文案。
 
 ### Survey 消息 — `examples/flows/survey_message_flow/survey_messages.json`
 
@@ -597,7 +624,7 @@ English (US),en-US,Joanna*,Female
 ```
 
 - `results` 字段定义 `AgentSurveyResult` 属性的本地化文案（`1` / `2` / `3` 对应三档满意度，`-1` 对应超时未评价）。
-- 目前支持的 language key：`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`ar`、`pt`、`it`（共 11 种语言）。
+- 目前支持的 language key：`us`、`cn`、`hk`、`jp`、`ko`、`fr`、`de`、`es`、`in`、`pt`、`it`（共 11 种语言）。
 
 ---
 
@@ -653,7 +680,7 @@ python deploy_cli.py clean
 > 请确认您查看的是正确的 Connect 实例。资源名称均以您输入的租户名称为前缀。
 
 **Q: 如何自定义 IVR 消息内容**
-> 编辑 `examples/flows/welcome_message_flow/ivr_messages.json`，找到对应的 language key（如 `us`、`cn`、`jp`），修改其中的 `welcomeMessage`、`openHourMessage`、`errorMessage` 字段。
+> 编辑 `examples/flows/welcome_message_flow/ivr_messages.json`，找到对应的 language key（如 `us`、`cn`、`jp`），修改其中的 `welcomeMessage`、`openHourMessage`、`errorMessage` 字段；SMS 短信文案对应 `smsWelcomeMessage`、`smsOpenHourMessage`、`smsErrorMessage` 字段。
 
 **Q: 如何自定义 Survey 消息内容**
 > 编辑 `examples/flows/survey_message_flow/survey_messages.json`，找到对应的 language key，修改 `surveyMessage` 和 `surveyMessageFeedback` 字段。如需调整满意度文案（写入 `AgentSurveyResult` 属性的值），修改该语言的 `results` 字段即可。

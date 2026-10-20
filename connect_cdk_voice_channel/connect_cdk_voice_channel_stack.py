@@ -188,6 +188,11 @@ def create_ivr_contact_flow(cfn_queue, cfn_contact_flow_screenpop=None, cfn_cont
         "contact_queue_name": f"{os.environ['tenant_name']} Queue",
         "contact_name": os.environ["tenant_name"],
         "Joanna": os.environ["tts_voice"],
+        # SMS 短信文案占位符刻意命名为 sms-*-text，不包含 welcome-message / open-hour-message /
+        # error-message 等旧占位符子串，避免字符串替换互相干扰；未提供 sms 文案时回退到语音文案。
+        "sms-welcome-text": os.environ.get("ivr_sms_welcome_message") or os.environ["ivr_welcome_message"],
+        "sms-open-hour-text": os.environ.get("ivr_sms_open_hour_message") or os.environ["ivr_open_hour_message"],
+        "sms-error-text": os.environ.get("ivr_sms_error_message") or os.environ["ivr_error_message"],
         "welcome-message": os.environ["ivr_welcome_message"],
         "open-hour-message": os.environ["ivr_open_hour_message"],
         "error-message": os.environ["ivr_error_message"],
@@ -378,7 +383,10 @@ class ConnectCdkVoiceChannelStack(Stack):
             message_data = load_json_file('ivr_messages.json')
             for key, env_key in [('welcomeMessage', 'ivr_welcome_message'),
                                  ('openHourMessage', 'ivr_open_hour_message'),
-                                 ('errorMessage', 'ivr_error_message')]:
+                                 ('errorMessage', 'ivr_error_message'),
+                                 ('smsWelcomeMessage', 'ivr_sms_welcome_message'),
+                                 ('smsOpenHourMessage', 'ivr_sms_open_hour_message'),
+                                 ('smsErrorMessage', 'ivr_sms_error_message')]:
                 os.environ[env_key] = message_data.get(key, '')
 
         flow_content = create_ivr_contact_flow(
@@ -407,12 +415,21 @@ class ConnectCdkVoiceChannelStack(Stack):
                 connect.CfnRoutingProfile.MediaConcurrencyProperty(
                     channel="CHAT", concurrency=1)
             ],
-            queue_configs=[connect.CfnRoutingProfile.RoutingProfileQueueConfigProperty(
-                delay=0, priority=1,
-                queue_reference=connect.CfnRoutingProfile.RoutingProfileQueueReferenceProperty(
-                    channel="VOICE", queue_arn=queue.attr_queue_arn
+            queue_configs=[
+                connect.CfnRoutingProfile.RoutingProfileQueueConfigProperty(
+                    delay=0, priority=1,
+                    queue_reference=connect.CfnRoutingProfile.RoutingProfileQueueReferenceProperty(
+                        channel="VOICE", queue_arn=queue.attr_queue_arn
+                    )
+                ),
+                # 队列同时以 CHAT 通道加入，SMS（CHAT 子类型）联系才能分配给座席
+                connect.CfnRoutingProfile.RoutingProfileQueueConfigProperty(
+                    delay=0, priority=1,
+                    queue_reference=connect.CfnRoutingProfile.RoutingProfileQueueReferenceProperty(
+                        channel="CHAT", queue_arn=queue.attr_queue_arn
+                    )
                 )
-            )],
+            ],
             name=f"{config['tenant_name']} Routing Profile"
         )
 

@@ -1,9 +1,9 @@
 {
     "Version": "2019-10-30",
-    "StartAction": "22bf08ee-d984-4723-a29a-74539f9230c4",
+    "StartAction": "55ed7675-7c63-426c-be15-dc2484c965f1",
     "Metadata": {
         "entryPointPosition": {
-            "x": 40,
+            "x": -280,
             "y": 40
         },
         "ActionMetadata": {
@@ -85,6 +85,24 @@
                     "x": 75.2,
                     "y": 236
                 }
+            },
+            "55ed7675-7c63-426c-be15-dc2484c965f1": {
+                "position": {
+                    "x": -180,
+                    "y": 36.8
+                },
+                "conditions": [],
+                "conditionMetadata": [
+                    {
+                        "id": "b795d031-093b-4ef0-afde-8fe694abc585",
+                        "operator": {
+                            "name": "Equals",
+                            "value": "Equals",
+                            "shortDisplay": "="
+                        },
+                        "value": "connect:SMS"
+                    }
+                ]
             }
         },
         "Annotations": [],
@@ -276,6 +294,33 @@
                     {
                         "NextAction": "e9955788-2973-4b30-b63a-c62c0d9a7715",
                         "ErrorType": "NoMatchingError"
+                    }
+                ]
+            }
+        },
+        {
+            "Parameters": {
+                "ComparisonValue": "$.SegmentAttributes['connect:Subtype']"
+            },
+            "Identifier": "55ed7675-7c63-426c-be15-dc2484c965f1",
+            "Type": "Compare",
+            "Transitions": {
+                "NextAction": "22bf08ee-d984-4723-a29a-74539f9230c4",
+                "Conditions": [
+                    {
+                        "NextAction": "fb485f10-8bf5-44e2-a93b-ef3ccbe40f92",
+                        "Condition": {
+                            "Operator": "Equals",
+                            "Operands": [
+                                "connect:SMS"
+                            ]
+                        }
+                    }
+                ],
+                "Errors": [
+                    {
+                        "NextAction": "22bf08ee-d984-4723-a29a-74539f9230c4",
+                        "ErrorType": "NoMatchingCondition"
                     }
                 ]
             }

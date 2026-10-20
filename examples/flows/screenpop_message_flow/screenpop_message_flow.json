@@ -171,6 +171,33 @@
           "PhoneNumber": true
         },
         "customerProfilesAction": "CreateCustomerProfile"
+      },
+      "37ace303-0985-4fe2-8e47-37f9c091f4c1": {
+        "position": {
+          "x": -450.4,
+          "y": 360
+        },
+        "conditions": [],
+        "conditionMetadata": [
+          {
+            "id": "4e37670b-a6d1-45fa-9323-e1d7029672c7",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "+266696687"
+          },
+          {
+            "id": "547eb420-6bf2-48c0-be49-566ef3b94c89",
+            "operator": {
+              "name": "Starts with",
+              "value": "StartsWith",
+              "shortDisplay": "starts with"
+            },
+            "value": "+"
+          }
+        ]
       }
     },
     "Annotations": [],
@@ -188,7 +215,7 @@
       "Identifier": "833ad7ee-4b0e-4337-be2f-9f10f1850f34",
       "Type": "UpdateFlowLoggingBehavior",
       "Transitions": {
-        "NextAction": "1651b54e-1b1e-4875-aeab-d62735605ac5"
+        "NextAction": "37ace303-0985-4fe2-8e47-37f9c091f4c1"
       }
     },
     {
@@ -424,6 +451,42 @@
           {
             "NextAction": "32650649-ad04-4fd3-9b6d-1ecf340aa596",
             "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ComparisonValue": "$.CustomerEndpoint.Address"
+      },
+      "Identifier": "37ace303-0985-4fe2-8e47-37f9c091f4c1",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "System attributes",
+        "Conditions": [
+          {
+            "NextAction": "System attributes",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "+266696687"
+              ]
+            }
+          },
+          {
+            "NextAction": "1651b54e-1b1e-4875-aeab-d62735605ac5",
+            "Condition": {
+              "Operator": "TextStartsWith",
+              "Operands": [
+                "+"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "System attributes",
+            "ErrorType": "NoMatchingCondition"
           }
         ]
       }

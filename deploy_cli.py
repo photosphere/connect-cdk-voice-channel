@@ -36,10 +36,25 @@ LANGUAGE_REGION_MAP = {
     "Korean": "ko",
     "French": "fr",
     "Spanish": "es",
-    "Arabic": "ar",
+    "Hindi": "in",
     "Portuguese": "pt",
     "Italian": "it",
 }
+
+# 步骤 2 语言分组菜单：(组标题, 匹配关键字, 组内优先顺序, 最多显示个数 None=全部)
+# 只有这里列出的语言可选，CSV 中的其他语言不显示、也不能输入选中
+LANGUAGE_GROUPS = [
+    ("英语", "English", ["English (US)", "English (British)", "English (Indian)"], 3),
+    ("中文", "Chinese", ["Chinese (Mandarin)", "Chinese (Cantonese)"], None),
+    ("日语", "Japanese", [], None),
+    ("韩语", "Korean", [], None),
+    ("法语", "French", [], None),
+    ("德语", "German", [], None),
+    ("西班牙语", "Spanish", [], None),
+    ("印地语", "Hindi", [], None),
+    ("葡萄牙语", "Portuguese", [], None),
+    ("意大利语", "Italian", [], None),
+]
 
 HOP_REGION_MAP = {
     "us": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
@@ -50,7 +65,7 @@ HOP_REGION_MAP = {
     "ko": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
     "fr": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
     "es": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
-    "ar": os.path.join(HOP_DIR, "hours_of_operation_dubai.json"),
+    "in": os.path.join(HOP_DIR, "hours_of_operation_in.json"),
     "pt": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
     "it": os.path.join(HOP_DIR, "hours_of_operation_us.json"),
 }
@@ -446,6 +461,108 @@ def step1_connect_instance():
 
 # ─── 步骤 2: 选择语言和语音 ──────────────────────────────────────────────────
 
+def resolve_region_key(lang_name):
+    """按 LANGUAGE_REGION_MAP 最长匹配返回区域 key，未匹配返回 None"""
+    region_key = None
+    best_match_len = 0
+    for key, value in LANGUAGE_REGION_MAP.items():
+        if key.lower() in lang_name.lower() and len(key) > best_match_len:
+            region_key = value
+            best_match_len = len(key)
+    return region_key
+
+
+def build_language_groups(lang_names):
+    """按 LANGUAGE_GROUPS 将语言名分组并编号，未配置的语言被过滤掉"""
+    assigned = set()
+    raw_groups = []
+    for title, keyword, preferred, max_visible in LANGUAGE_GROUPS:
+        members = [n for n in lang_names if keyword in n and n not in assigned]
+        if not members:
+            continue
+        assigned.update(members)
+        if preferred:
+            ordered = [n for n in preferred if n in members]
+        else:
+            ordered = [n for n in members if n == keyword]
+        ordered += [n for n in members if n not in ordered]
+        if max_visible is None:
+            variants, hidden = ordered, []
+        else:
+            variants, hidden = ordered[:max_visible], ordered[max_visible:]
+        raw_groups.append((title, keyword, variants, hidden))
+
+    groups = []
+    for number, (title, keyword, variants, hidden) in enumerate(raw_groups, 1):
+        groups.append({
+            "number": number,
+            "title": title,
+            "keyword": keyword,
+            "variants": variants,
+            "hidden": hidden,
+        })
+    return groups
+
+
+def format_language_menu(groups):
+    """生成语言分组菜单的输出行（组号右对齐，子项统一缩进到组标题列）"""
+    lines = []
+    width = len(str(max((g["number"] for g in groups), default=1)))
+    sub_indent = " " * (4 + width + 2)
+    for g in groups:
+        lines.append(f"    {g['number']:>{width}}. {g['title']}")
+        for i, name in enumerate(g["variants"], 1):
+            lines.append(f"{sub_indent}{g['number']}.{i} {name}")
+        if g["hidden"]:
+            lines.append(f"{sub_indent}（其他{g['title']}变体可直接输入名称：{', '.join(g['hidden'])}）")
+    return lines
+
+
+def parse_language_choice(raw, groups, lang_names):
+    """解析语言输入（组号 / 组号.序号 / 语言名称），返回 CSV 中的语言名，无法匹配返回 None"""
+    import re
+    text = " ".join(raw.split())
+    if not text:
+        return None
+    by_number = {g["number"]: g for g in groups}
+    # 只允许菜单中的语言（含英语隐藏变体），被过滤掉的语言不能按名称选中
+    allowed = {n for g in groups for n in g["variants"] + g["hidden"]}
+    lang_names = [n for n in lang_names if n in allowed]
+
+    # 组号，如 "2" 或 "2."：选择该组第一个
+    m = re.fullmatch(r"(\d+)\.?", text)
+    if m:
+        g = by_number.get(int(m.group(1)))
+        return g["variants"][0] if g else None
+
+    # 组号.序号，如 "2.1"
+    m = re.fullmatch(r"(\d+)\.(\d+)", text)
+    if m:
+        g = by_number.get(int(m.group(1)))
+        idx = int(m.group(2))
+        if g and 1 <= idx <= len(g["variants"]):
+            return g["variants"][idx - 1]
+        return None
+
+    key = text.casefold()
+
+    # 完整语言名称（含未显示的变体）
+    for name in lang_names:
+        if name.casefold() == key:
+            return name
+
+    # 组标题或组关键字，如 "中文"、"Chinese"
+    for g in groups:
+        if key in (g["title"].casefold(), g["keyword"].casefold()):
+            return g["variants"][0]
+
+    # 唯一子串匹配，如 "mandarin"
+    matches = [n for n in lang_names if key in n.casefold()]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
 def step2_language_voice():
     print_header(2, "选择 IVR 语言和语音")
     print()
@@ -461,63 +578,21 @@ def step2_language_voice():
             lang_names.append(name)
             seen.add(name)
 
-    # 构建语言分类提示
-    language_categories = {
-        "英语": [n for n in lang_names if "English" in n],
-        "中文": [n for n in lang_names if "Chinese" in n],
-        "日语": [n for n in lang_names if "Japanese" in n],
-        "韩语": [n for n in lang_names if "Korean" in n],
-        "法语": [n for n in lang_names if "French" in n],
-        "德语": [n for n in lang_names if "German" in n],
-        "西班牙语": [n for n in lang_names if "Spanish" in n],
-        "阿拉伯语": [n for n in lang_names if "Arabic" in n],
-        "葡萄牙语": [n for n in lang_names if "Portuguese" in n],
-        "意大利语": [n for n in lang_names if "Italian" in n],
-    }
+    # 构建语言分组菜单
+    groups = build_language_groups(lang_names)
 
-    print("  可选语言类别:")
-    for i, (zh_name, variants) in enumerate(language_categories.items(), 1):
-        if variants:
-            print(f"    {i}. {zh_name} ({', '.join(variants[:3])}{'...' if len(variants) > 3 else ''})")
-
-    # 也列出其他语言
-    categorized = set()
-    for variants in language_categories.values():
-        categorized.update(variants)
-    others = [n for n in lang_names if n not in categorized]
-    if others:
-        print(f"    其他: {', '.join(others)}")
+    print("  可选语言:")
+    for line in format_language_menu(groups):
+        print(line)
 
     print()
-    print("  请输入语言编号或直接输入语言名称（如 'English (US)', 'Chinese (Mandarin)'）")
-    lang_input = prompt_input("  语言选择")
-
-    # 解析输入
-    selected_lang = None
-    try:
-        idx = int(lang_input) - 1
-        category_keys = list(language_categories.keys())
-        if 0 <= idx < len(category_keys):
-            variants = language_categories[category_keys[idx]]
-            if len(variants) == 1:
-                selected_lang = variants[0]
-            else:
-                print(f"\n  该类别下有多个变体:")
-                for j, v in enumerate(variants, 1):
-                    print(f"    {j}. {v}")
-                v_input = prompt_input("  请选择变体编号", "1")
-                v_idx = int(v_input) - 1
-                selected_lang = variants[v_idx] if 0 <= v_idx < len(variants) else variants[0]
-    except ValueError:
-        # 直接输入了语言名称
-        for name in lang_names:
-            if lang_input.lower() in name.lower():
-                selected_lang = name
-                break
-
-    if not selected_lang:
-        print("  ⚠ 未匹配到语言，使用默认 English (US)")
-        selected_lang = "English (US)"
+    print("  请输入编号（如 2 或 2.1）或语言名称（如 'English (US)', 'Chinese (Mandarin)'）；只输入组号时默认选择该组第一个")
+    while True:
+        lang_input = prompt_input("  语言选择")
+        selected_lang = parse_language_choice(lang_input, groups, lang_names)
+        if selected_lang:
+            break
+        print(f"  ⚠ 未匹配到语言「{lang_input}」，请输入编号（如 2 或 2.1）或语言名称（如 Chinese (Mandarin)）。")
 
     # 筛选该语言的语音
     voices = [r for r in languages if r["LanguageName"].strip() == selected_lang]
@@ -531,12 +606,7 @@ def step2_language_voice():
     print(f"  使用语音: {first_voice} ({voices[0]['Gender'].strip()})")
 
     # 确定区域映射 — 优先匹配更具体的名称（如 "Chinese (Mandarin)" 优先于 "Chinese"）
-    region_key = "us"  # 默认
-    best_match_len = 0
-    for key, value in LANGUAGE_REGION_MAP.items():
-        if key.lower() in selected_lang.lower() and len(key) > best_match_len:
-            region_key = value
-            best_match_len = len(key)
+    region_key = resolve_region_key(selected_lang) or "us"  # 未匹配时默认 us
 
     if not prompt_yes_no(f"\n  确认使用 {selected_lang} / {first_voice}?"):
         print("  已取消。")
@@ -671,9 +741,15 @@ def deploy(
     welcome_msg = ivr_data.get("welcomeMessage", "")
     open_hour_msg = ivr_data.get("openHourMessage", "")
     error_msg = ivr_data.get("errorMessage", "")
+    # SMS 短信文案（主流程识别到 connect:Subtype == connect:SMS 时使用）
+    sms_welcome_msg = ivr_data.get("smsWelcomeMessage", "")
+    sms_open_hour_msg = ivr_data.get("smsOpenHourMessage", "")
+    sms_error_msg = ivr_data.get("smsErrorMessage", "")
 
     save_json(
-        {"welcomeMessage": welcome_msg, "openHourMessage": open_hour_msg, "errorMessage": error_msg},
+        {"welcomeMessage": welcome_msg, "openHourMessage": open_hour_msg, "errorMessage": error_msg,
+         "smsWelcomeMessage": sms_welcome_msg, "smsOpenHourMessage": sms_open_hour_msg,
+         "smsErrorMessage": sms_error_msg},
         "ivr_messages.json",
     )
 
@@ -714,6 +790,9 @@ def deploy(
     os.environ["ivr_welcome_message"] = welcome_msg
     os.environ["ivr_open_hour_message"] = open_hour_msg
     os.environ["ivr_error_message"] = error_msg
+    os.environ["ivr_sms_welcome_message"] = sms_welcome_msg
+    os.environ["ivr_sms_open_hour_message"] = sms_open_hour_msg
+    os.environ["ivr_sms_error_message"] = sms_error_msg
     os.environ["language_region_key"] = region_key
     os.environ["selected_language"] = selected_lang
 
@@ -816,6 +895,9 @@ def destroy():
     os.environ["ivr_welcome_message"] = ""
     os.environ["ivr_open_hour_message"] = ""
     os.environ["ivr_error_message"] = ""
+    os.environ["ivr_sms_welcome_message"] = ""
+    os.environ["ivr_sms_open_hour_message"] = ""
+    os.environ["ivr_sms_error_message"] = ""
     os.environ["survey_message"] = ""
     os.environ["survey_message_feedback"] = ""
 
@@ -858,7 +940,10 @@ def destroy():
         save_json(
             {"welcomeMessage": ivr_default["welcomeMessage"],
              "openHourMessage": ivr_default["openHourMessage"],
-             "errorMessage": ivr_default["errorMessage"]},
+             "errorMessage": ivr_default["errorMessage"],
+             "smsWelcomeMessage": ivr_default.get("smsWelcomeMessage", ""),
+             "smsOpenHourMessage": ivr_default.get("smsOpenHourMessage", ""),
+             "smsErrorMessage": ivr_default.get("smsErrorMessage", "")},
             "ivr_messages.json",
         )
         created_placeholders.append("ivr_messages.json")

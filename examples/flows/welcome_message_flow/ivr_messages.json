@@ -3,66 +3,99 @@
     "language": "English",
     "welcomeMessage": "Thanks for calling Amazon Connect. ",
     "openHourMessage": "Thanks for calling Amazon Connect.Our office hours are from 9 am to 5 pm, Monday to Friday. Please call us back during office hour. Thank you.",
-    "errorMessage": "Thanks for calling Amazon Connect.We are currently experiencing heavy call traffic. Please call us later."
+    "errorMessage": "Thanks for calling Amazon Connect.We are currently experiencing heavy call traffic. Please call us later.",
+    "smsWelcomeMessage": "Thanks for messaging Amazon Connect. An agent will reply to you shortly. Please stay in this conversation.",
+    "smsOpenHourMessage": "Thanks for messaging Amazon Connect. Our office hours are from 9 am to 5 pm, Monday to Friday. Please send us a message during office hours. Thank you.",
+    "smsErrorMessage": "Thanks for messaging Amazon Connect. We are currently receiving a high volume of messages. Please send us a message again later."
   },
   "cn": {
     "language": "Chinese (Mandarin)",
     "welcomeMessage": "感谢您的来电。我们的客服代表正在接通中，请您耐心等待。谢谢。",
     "openHourMessage": "感谢您的来电。我们的办公时间为周一至周五上午9点至下午5点。请在办公时间给我们来电。谢谢。",
-    "errorMessage": "感谢您的来电。我们目前的通话流量很大。请稍后再拨。谢谢。"
+    "errorMessage": "感谢您的来电。我们目前的通话流量很大。请稍后再拨。谢谢。",
+    "smsWelcomeMessage": "感谢您发送短信联系我们。客服代表将尽快回复您，请稍候。",
+    "smsOpenHourMessage": "感谢您发送短信联系我们。我们的服务时间为周一至周五上午9点至下午5点，请在服务时间内再给我们发送短信。谢谢。",
+    "smsErrorMessage": "感谢您发送短信联系我们。目前咨询量较大，请稍后再给我们发送短信。谢谢。"
   },
   "hk": {
     "language": "Chinese (Cantonese)",
     "welcomeMessage": "感谢您致电亚马逊客服中心。我们的客服代表正在接通中，请您耐心等待。谢谢。",
     "openHourMessage": "感谢您致电亚马逊客服中心。我们的办公时间为周一至周五上午9点至下午5点。请在办公时间给我们来电。谢谢。",
-    "errorMessage": "感谢您致电亚马逊客服中心。我们目前的通话流量很大。请稍后拨打我们的电话。谢谢。"
+    "errorMessage": "感谢您致电亚马逊客服中心。我们目前的通话流量很大。请稍后拨打我们的电话。谢谢。",
+    "smsWelcomeMessage": "感謝您以短訊聯絡亞馬遜客服中心。我們的客服代表將盡快回覆您，請稍候。",
+    "smsOpenHourMessage": "感謝您以短訊聯絡亞馬遜客服中心。我們的服務時間為星期一至星期五上午9時至下午5時，請於服務時間內再傳送短訊給我們。謝謝。",
+    "smsErrorMessage": "感謝您以短訊聯絡亞馬遜客服中心。目前查詢量較多，請稍後再傳送短訊給我們。謝謝。"
   },
   "jp": {
     "language": "Japanese",
     "welcomeMessage": "お電話ありがとうございます。担当者におつなぎしますので、しばらくお待ちください。",
     "openHourMessage": "お電話ありがとうございます。営業時間は月曜日から金曜日の午前9時から午後5時までです。営業時間内におかけ直しください。",
-    "errorMessage": "お電話ありがとうございます。ただいま電話が大変混み合っております。しばらくしてからおかけ直しください。"
+    "errorMessage": "お電話ありがとうございます。ただいま電話が大変混み合っております。しばらくしてからおかけ直しください。",
+    "smsWelcomeMessage": "メッセージをお送りいただきありがとうございます。担当者より順番に返信いたしますので、しばらくお待ちください。",
+    "smsOpenHourMessage": "メッセージをお送りいただきありがとうございます。営業時間は月曜日から金曜日の午前9時から午後5時までです。営業時間内に改めてメッセージをお送りください。",
+    "smsErrorMessage": "メッセージをお送りいただきありがとうございます。ただいまお問い合わせが大変混み合っております。しばらくしてから改めてメッセージをお送りください。"
   },
   "ko": {
     "language": "Korean",
     "welcomeMessage": "전화 주셔서 감사합니다. 상담원 연결 중이오니 잠시만 기다려 주십시오.",
     "openHourMessage": "전화 주셔서 감사합니다. 운영 시간은 월요일부터 금요일까지 오전 9시부터 오후 5시까지입니다. 운영 시간에 다시 전화해 주십시오.",
-    "errorMessage": "전화 주셔서 감사합니다. 현재 통화량이 많아 연결이 지연되고 있습니다. 잠시 후 다시 전화해 주십시오."
+    "errorMessage": "전화 주셔서 감사합니다. 현재 통화량이 많아 연결이 지연되고 있습니다. 잠시 후 다시 전화해 주십시오.",
+    "smsWelcomeMessage": "메시지를 보내 주셔서 감사합니다. 상담원이 곧 답장해 드릴 예정이오니 잠시만 기다려 주십시오.",
+    "smsOpenHourMessage": "메시지를 보내 주셔서 감사합니다. 운영 시간은 월요일부터 금요일까지 오전 9시부터 오후 5시까지입니다. 운영 시간에 다시 메시지를 보내 주십시오.",
+    "smsErrorMessage": "메시지를 보내 주셔서 감사합니다. 현재 문의량이 많아 답변이 지연되고 있습니다. 잠시 후 다시 메시지를 보내 주십시오."
   },
   "fr": {
     "language": "French",
     "welcomeMessage": "Merci de votre appel. Un conseiller va prendre votre appel, veuillez patienter.",
     "openHourMessage": "Merci de votre appel. Nos heures d'ouverture sont du lundi au vendredi de 9h à 17h. Veuillez rappeler pendant les heures d'ouverture. Merci.",
-    "errorMessage": "Merci de votre appel. Nous connaissons actuellement un volume d'appels élevé. Veuillez rappeler ultérieurement."
+    "errorMessage": "Merci de votre appel. Nous connaissons actuellement un volume d'appels élevé. Veuillez rappeler ultérieurement.",
+    "smsWelcomeMessage": "Merci pour votre message. Un conseiller va vous répondre sous peu, veuillez patienter.",
+    "smsOpenHourMessage": "Merci pour votre message. Nos heures d'ouverture sont du lundi au vendredi de 9h à 17h. Veuillez nous écrire à nouveau pendant les heures d'ouverture. Merci.",
+    "smsErrorMessage": "Merci pour votre message. Nous recevons actuellement un volume élevé de messages. Veuillez nous écrire à nouveau ultérieurement."
   },
   "de": {
     "language": "German",
     "welcomeMessage": "Willkommen im Amazon Contact Center. Wie kann ich dir heute helfen?",
     "openHourMessage": "Willkommen im Amazon Contact Center.Unsere Bürozeiten sind montags bis freitags von 9 bis 17 Uhr. Bitte rufen Sie uns während der Bürozeiten zurück. Danke.",
-    "errorMessage": "Willkommen im Amazon Contact Center.Wir haben derzeit einen starken Anrufverkehr. Bitte rufen Sie uns später an."
+    "errorMessage": "Willkommen im Amazon Contact Center.Wir haben derzeit einen starken Anrufverkehr. Bitte rufen Sie uns später an.",
+    "smsWelcomeMessage": "Vielen Dank für Ihre Nachricht an das Amazon Contact Center. Ein Mitarbeiter antwortet Ihnen in Kürze. Bitte haben Sie etwas Geduld.",
+    "smsOpenHourMessage": "Vielen Dank für Ihre Nachricht an das Amazon Contact Center. Unsere Bürozeiten sind montags bis freitags von 9 bis 17 Uhr. Bitte schreiben Sie uns während der Bürozeiten erneut. Danke.",
+    "smsErrorMessage": "Vielen Dank für Ihre Nachricht an das Amazon Contact Center. Wir erhalten derzeit sehr viele Nachrichten. Bitte schreiben Sie uns später erneut."
   },
   "es": {
     "language": "Spanish",
     "welcomeMessage": "Gracias por llamar. Un agente le atenderá en breve, por favor espere.",
     "openHourMessage": "Gracias por llamar. Nuestro horario de atención es de lunes a viernes de 9:00 a 17:00. Por favor, llame durante el horario de atención. Gracias.",
-    "errorMessage": "Gracias por llamar. Actualmente estamos experimentando un alto volumen de llamadas. Por favor, inténtelo más tarde."
+    "errorMessage": "Gracias por llamar. Actualmente estamos experimentando un alto volumen de llamadas. Por favor, inténtelo más tarde.",
+    "smsWelcomeMessage": "Gracias por su mensaje. Un agente le responderá en breve, por favor espere.",
+    "smsOpenHourMessage": "Gracias por su mensaje. Nuestro horario de atención es de lunes a viernes de 9:00 a 17:00. Por favor, escríbanos de nuevo durante el horario de atención. Gracias.",
+    "smsErrorMessage": "Gracias por su mensaje. Actualmente estamos recibiendo un alto volumen de mensajes. Por favor, escríbanos de nuevo más tarde."
   },
-  "ar": {
-    "language": "Arabic",
-    "welcomeMessage": "شكراً لاتصالك. سيتم تحويلك إلى أحد ممثلي خدمة العملاء، يرجى الانتظار.",
-    "openHourMessage": "شكراً لاتصالك. ساعات العمل من الاثنين إلى الجمعة من الساعة 9 صباحاً حتى 5 مساءً. يرجى الاتصال خلال ساعات العمل. شكراً.",
-    "errorMessage": "شكراً لاتصالك. نحن نواجه حالياً حجم مكالمات كبير. يرجى المحاولة لاحقاً."
+  "in": {
+    "language": "Hindi",
+    "welcomeMessage": "अमेज़न कनेक्ट को कॉल करने के लिए धन्यवाद।",
+    "openHourMessage": "अमेज़न कनेक्ट को कॉल करने के लिए धन्यवाद। हमारा कार्यालय समय सोमवार से शुक्रवार, सुबह 9 बजे से शाम 5 बजे तक है। कृपया कार्यालय समय के दौरान हमें दोबारा कॉल करें। धन्यवाद।",
+    "errorMessage": "अमेज़न कनेक्ट को कॉल करने के लिए धन्यवाद। इस समय हमारे पास कॉल की संख्या बहुत अधिक है। कृपया कुछ देर बाद हमें कॉल करें।",
+    "smsWelcomeMessage": "अमेज़न कनेक्ट को संदेश भेजने के लिए धन्यवाद। हमारा एक प्रतिनिधि जल्द ही आपको जवाब देगा। कृपया इसी बातचीत में बने रहें।",
+    "smsOpenHourMessage": "अमेज़न कनेक्ट को संदेश भेजने के लिए धन्यवाद। हमारा कार्यालय समय सोमवार से शुक्रवार, सुबह 9 बजे से शाम 5 बजे तक है। कृपया कार्यालय समय के दौरान हमें दोबारा संदेश भेजें। धन्यवाद।",
+    "smsErrorMessage": "अमेज़न कनेक्ट को संदेश भेजने के लिए धन्यवाद। इस समय हमें बहुत अधिक संदेश मिल रहे हैं। कृपया कुछ देर बाद हमें दोबारा संदेश भेजें।"
   },
   "pt": {
     "language": "Portuguese",
     "welcomeMessage": "Obrigado por ligar. Um atendente irá atendê-lo em breve, por favor aguarde.",
     "openHourMessage": "Obrigado por ligar. Nosso horário de atendimento é de segunda a sexta-feira, das 9h às 17h. Por favor, ligue durante o horário de atendimento. Obrigado.",
-    "errorMessage": "Obrigado por ligar. Estamos com um alto volume de chamadas no momento. Por favor, tente novamente mais tarde."
+    "errorMessage": "Obrigado por ligar. Estamos com um alto volume de chamadas no momento. Por favor, tente novamente mais tarde.",
+    "smsWelcomeMessage": "Obrigado pela sua mensagem. Um atendente irá responder em breve, por favor aguarde.",
+    "smsOpenHourMessage": "Obrigado pela sua mensagem. Nosso horário de atendimento é de segunda a sexta-feira, das 9h às 17h. Por favor, envie uma nova mensagem durante o horário de atendimento. Obrigado.",
+    "smsErrorMessage": "Obrigado pela sua mensagem. Estamos recebendo um alto volume de mensagens no momento. Por favor, envie uma nova mensagem mais tarde."
   },
   "it": {
     "language": "Italian",
     "welcomeMessage": "Grazie per aver chiamato. Un operatore la assisterà a breve, la preghiamo di attendere.",
     "openHourMessage": "Grazie per aver chiamato. I nostri orari di apertura sono dal lunedì al venerdì dalle 9:00 alle 17:00. La preghiamo di richiamare durante gli orari di apertura. Grazie.",
-    "errorMessage": "Grazie per aver chiamato. Al momento stiamo riscontrando un elevato volume di chiamate. La preghiamo di riprovare più tardi."
+    "errorMessage": "Grazie per aver chiamato. Al momento stiamo riscontrando un elevato volume di chiamate. La preghiamo di riprovare più tardi.",
+    "smsWelcomeMessage": "Grazie per il suo messaggio. Un operatore le risponderà a breve, la preghiamo di attendere.",
+    "smsOpenHourMessage": "Grazie per il suo messaggio. I nostri orari di apertura sono dal lunedì al venerdì dalle 9:00 alle 17:00. La preghiamo di scriverci di nuovo durante gli orari di apertura. Grazie.",
+    "smsErrorMessage": "Grazie per il suo messaggio. Al momento stiamo ricevendo un elevato numero di messaggi. La preghiamo di scriverci di nuovo più tardi."
   }
 }
