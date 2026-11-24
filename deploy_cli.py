@@ -8,10 +8,16 @@ import os
 import sys
 import csv
 import json
+import re
 import shutil
 import subprocess
 
-import boto3
+try:
+    import boto3
+except ImportError:
+    # 尚未安装依赖：main() 中的 ensure_dependencies() 会创建 .venv、安装 requirements.txt
+    # （含 boto3），再用 .venv 的解释器重新执行本脚本。
+    boto3 = None
 
 # ─── 常量 ───────────────────────────────────────────────────────────────────
 
@@ -383,19 +389,174 @@ def print_summary(label, value):
 
 # ─── 步骤 1: 确认 Amazon Connect 实例 ────────────────────────────────────────
 
+REGION_RE = re.compile(r"^[a-z]{2}(-[a-z]+)+-\d$")
+INSTANCE_ARN_RE = re.compile(
+    r"^arn:aws[a-z-]*:connect:([a-z0-9-]+):(\d{12}):instance/([0-9a-fA-F-]{36})$")
+INSTANCE_ARN_HINT = "arn:aws:connect:<区域>:<12 位账号>:instance/<实例ID>"
+
+# botocore 本地 endpoint 数据不可用时的回退列表（Amazon Connect 商业区域）
+CONNECT_REGIONS_FALLBACK = [
+    "us-east-1", "us-west-2", "af-south-1", "ap-northeast-1", "ap-northeast-2",
+    "ap-southeast-1", "ap-southeast-2", "ca-central-1", "eu-central-1", "eu-west-2",
+]
+
+
+def prompt_choice(label, options, default=None, free_text=None, prompt="请输入序号"):
+    """编号选择列表。options: [(value, display), ...]。
+
+    可输入序号或选项值；提供 free_text 时，其它输入交给 free_text(raw) 校验，
+    返回规范化后的值，或抛出 ValueError(原因) 要求重新输入。
+    """
+    values = [v for v, _ in options]
+    default_index = values.index(default) + 1 if default in values else None
+    print(f"  {label}")
+    for i, (_, display) in enumerate(options, 1):
+        mark = "（默认）" if i == default_index else ""
+        print(f"    {i}) {display}{mark}")
+    suffix = f" [{default_index}]" if default_index else ""
+    while True:
+        raw = input(f"  {prompt}{suffix}: ").strip()
+        if not raw:
+            if default_index:
+                return values[default_index - 1]
+            print("  ⚠ 请选择一项。")
+            continue
+        if raw.isdigit():
+            n = int(raw)
+            if 1 <= n <= len(values):
+                return values[n - 1]
+            print(f"  ⚠ 序号必须在 1-{len(values)} 之间。")
+            continue
+        if raw in values:
+            return raw
+        if free_text is not None:
+            try:
+                return free_text(raw)
+            except ValueError as e:
+                print(f"  ⚠ {e}")
+                continue
+        print(f"  ⚠ 请输入 1-{len(values)} 之间的序号。")
+
+
+def use_region(region):
+    """将选定区域设为本进程及所有子进程的默认区域。
+
+    后续 boto3.client(...)（实例验证、重名协调、bootstrap 检测）与 cdk deploy/destroy
+    子进程都会使用该区域，保证资源部署到 Connect 实例所在区域。
+    """
+    os.environ["AWS_REGION"] = region
+    os.environ["AWS_DEFAULT_REGION"] = region
+    boto3.setup_default_session(region_name=region)
+
+
+def prompt_region():
+    """选择 AWS 区域：列出 Amazon Connect 可用区域，默认当前凭证配置的区域。"""
+    try:
+        regions = boto3.session.Session().get_available_regions("connect")
+    except Exception:
+        regions = []
+    regions = sorted(regions or CONNECT_REGIONS_FALLBACK)
+    # 默认区域 = 当前区域：优先 AWS_REGION（boto3 不读取该变量，但 CDK CLI / AWS CLI v2 会读取），
+    # 其次 boto3 的解析结果（AWS_DEFAULT_REGION → ~/.aws/config 中当前 profile 的 region）
+    default = os.environ.get("AWS_REGION")
+    if not default:
+        try:
+            default = boto3.session.Session().region_name
+        except Exception:
+            default = None
+
+    def free(value):
+        if not REGION_RE.match(value):
+            raise ValueError(f"区域格式错误: {value}（例如 us-east-1）")
+        return value
+
+    return prompt_choice("AWS 区域（Connect 实例所在区域）：", [(r, r) for r in regions],
+                         default=default, free_text=free, prompt="请输入序号或区域名")
+
+
+def list_active_instances(region):
+    """只读 ListInstances：返回该区域 ACTIVE 状态的实例，按别名排序。"""
+    client = boto3.client("connect", region_name=region)
+    items = []
+    for page in client.get_paginator("list_instances").paginate():
+        items.extend(i for i in page.get("InstanceSummaryList", [])
+                     if i.get("Arn") and i.get("InstanceStatus") == "ACTIVE")
+    return sorted(items, key=lambda i: (i.get("InstanceAlias") or "", i.get("Id") or ""))
+
+
+def instance_arn_validator(region):
+    """校验手动输入的实例 ARN 格式，且 ARN 中的区域必须与选定区域一致。"""
+    def validate(value):
+        m = INSTANCE_ARN_RE.match(value.strip())
+        if not m:
+            raise ValueError(f"ARN 格式错误（应为 {INSTANCE_ARN_HINT}）")
+        if m.group(1) != region:
+            raise ValueError(f"ARN 中的区域 {m.group(1)} 与所选区域 {region} 不一致")
+        return value.strip()
+    return validate
+
+
+def prompt_instance_arn(region):
+    """列出区域内的 Connect 实例供选择；列举失败或无实例时回退为手动输入 ARN。"""
+    validate = instance_arn_validator(region)
+    print(f"\n  正在查询 {region} 区域的 Connect 实例...")
+    try:
+        instances = list_active_instances(region)
+    except Exception as e:
+        print(f"  ⚠ 列举 Connect 实例失败（{e}），请手动输入实例 ARN。")
+        instances = []
+    else:
+        if not instances:
+            print(f"  ⚠ {region} 区域没有 ACTIVE 状态的 Connect 实例，请手动输入实例 ARN。")
+
+    if instances:
+        options = [(i["Arn"], f"{i.get('InstanceAlias') or '-'}  {i.get('Id')}") for i in instances]
+        print()
+        return prompt_choice(f"请选择 Connect 实例（区域 {region}）：", options,
+                             default=options[0][0] if len(options) == 1 else None,
+                             free_text=validate, prompt="请输入序号或实例 ARN")
+
+    while True:
+        raw = prompt_input(f"  请输入 Amazon Connect 实例 ARN（{INSTANCE_ARN_HINT}）")
+        try:
+            return validate(raw)
+        except ValueError as e:
+            print(f"  ⚠ {e}")
+
+
+def check_credentials(region):
+    """调用 STS GetCallerIdentity 验证 AWS 凭证；凭证无效或过期时直接退出。
+
+    否则后续 ListInstances / DescribeInstance 都会因同一原因失败，
+    回退到手动输入 ARN 也无济于事。
+    """
+    try:
+        identity = boto3.client("sts", region_name=region).get_caller_identity()
+    except Exception as e:
+        print(f"\n  ✗ AWS 凭证无效或已过期: {e}")
+        print("    请更新凭证后重试，例如：")
+        print("      - 运行 aws configure 重新填写 Access Key（或 aws sso login / 重新导出临时凭证）")
+        print("      - 使用临时凭证时需同时设置 AWS_SESSION_TOKEN")
+        print("      - 运行 aws sts get-caller-identity 确认凭证可用")
+        sys.exit(1)
+    print_summary("当前身份", f"{identity['Arn']}（账号 {identity['Account']}）")
+    return identity
+
+
 def step1_connect_instance():
     print_header(1, "确认 Amazon Connect 实例")
     print()
 
-    connect_instance_arn = prompt_input("请输入 Amazon Connect 实例 ARN")
+    # 先选区域，再从该区域的实例列表中选择实例
+    region = prompt_region()
+    use_region(region)
+    print_summary("区域", region)
+    check_credentials(region)
 
-    # 从 ARN 中提取 Instance ID
+    connect_instance_arn = prompt_instance_arn(region)
+
     # ARN 格式: arn:aws:connect:region:account:instance/instance-id
-    try:
-        instance_id = connect_instance_arn.split("/")[-1]
-    except Exception:
-        print("  ✗ ARN 格式不正确，请检查后重试。")
-        sys.exit(1)
+    instance_id = connect_instance_arn.split("/")[-1]
 
     print(f"\n  正在验证 Connect 实例...")
     connect_client = boto3.client("connect")
@@ -879,9 +1040,14 @@ def cleanup():
 
 def destroy():
     """销毁已部署的 CDK Stack"""
+    # 部署时区域为交互选择，销毁时同样需要指定 Stack 所在区域
+    region = prompt_region()
+    use_region(region)
+    check_credentials(region)
+    print()
     tenant_name, stack_name = prompt_tenant_name("请输入要销毁的租户名称 (Tenant Name)")
 
-    print(f"\n  ⚠ 即将销毁 Stack: {stack_name}" + (f"（租户名: {tenant_name}）" if stack_name != tenant_name else ""))
+    print(f"\n  ⚠ 即将销毁 Stack: {stack_name}（区域 {region}）" + (f"（租户名: {tenant_name}）" if stack_name != tenant_name else ""))
     if not prompt_yes_no("  确认销毁?", "n"):
         print("  已取消。")
         return
@@ -995,8 +1161,20 @@ def get_dir_size(path):
     return total
 
 
+def is_cloudshell():
+    """是否运行在 AWS CloudShell 中（家目录固定为 /home/cloudshell-user）。"""
+    return (os.environ.get("AWS_EXECUTION_ENV", "").lower() == "cloudshell"
+            or os.path.expanduser("~") == "/home/cloudshell-user")
+
+
 def check_and_clear_cache():
-    """检查缓存目录大小，超过 100MB 时清空其内容以释放磁盘空间。"""
+    """检查缓存目录大小，超过 100MB 时清空其内容以释放磁盘空间。
+
+    仅在 CloudShell 中执行：本地电脑的 ~/.cache 中通常有其它程序的缓存
+    （模型、浏览器等），不应被部署脚本清空。
+    """
+    if not is_cloudshell():
+        return
     if not os.path.isdir(CACHE_DIR):
         return
 
@@ -1033,11 +1211,12 @@ def ensure_dependencies():
     在 Homebrew / Debian 等「externally-managed」环境中，pip 会依据 PEP 668
     拒绝全局或 --user 安装。为兼容这些环境，这里在项目目录下创建独立的虚拟环境
     .venv，将依赖安装其中，并用该虚拟环境的解释器重新执行本脚本，
-    从而避免 ModuleNotFoundError: No module named 'aws_cdk'。
+    从而避免 ModuleNotFoundError: No module named 'aws_cdk' / 'boto3'。
     """
     import importlib.util
 
-    required_modules = ["aws_cdk", "constructs"]
+    # boto3 也在其中：系统 Python 未安装 boto3 时同样走 .venv 安装流程
+    required_modules = ["aws_cdk", "constructs", "boto3"]
     missing = [m for m in required_modules if importlib.util.find_spec(m) is None]
     if not missing:
         return
@@ -1056,6 +1235,10 @@ def ensure_dependencies():
         try:
             subprocess.run([sys.executable, "-m", "pip", "install", "-r", req_file], check=True)
             print("  ✓ 依赖安装完成")
+            # 模块顶部导入 boto3 失败时为 None，安装后在当前进程中补导入
+            global boto3
+            if boto3 is None:
+                import boto3
             return
         except subprocess.CalledProcessError as e:
             print(f"  ✗ 依赖安装失败: {e}")
@@ -1099,9 +1282,83 @@ def ensure_dependencies():
     os.execv(venv_python, [venv_python] + sys.argv)
 
 
+# ─── 运行环境 / CDK Bootstrap ────────────────────────────────────────────────
+
+# CDK 默认 bootstrap qualifier（cdk.json 未自定义 @aws-cdk/core:bootstrapQualifier）
+CDK_BOOTSTRAP_VERSION_PARAM = "/cdk-bootstrap/hnb659fds/version"
+
+
+def setup_runtime_env():
+    """准备运行环境，使脚本可在 CloudShell 中从任意目录直接运行。
+
+    - 等同 `export JSII_RUNTIME_PACKAGE_CACHE=disabled`：CloudShell 家目录权限为 0777，
+      jsii 会拒绝使用 ~/.cache/aws/jsii 包缓存，导致 `import aws_cdk` 失败。
+      该变量会被 cdk 子进程及其运行的 `python3 app.py` 继承；用户已显式设置时保留其值。
+    - 等同 `cd <项目目录>`：脚本与 Stack 中的 examples/、connect.json 等均为相对路径。
+    """
+    os.environ.setdefault("JSII_RUNTIME_PACKAGE_CACHE", "disabled")
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+
+def ensure_cdk_bootstrap():
+    """确保当前账号/区域已完成 CDK bootstrap，未完成则自动执行。
+
+    等同 `cd ~ && npx --yes aws-cdk@latest bootstrap aws://<账号>/<区域>`：
+    - 账号取自当前 AWS 凭证；区域为步骤 1 所选区域（use_region 已写入 AWS_REGION /
+      AWS_DEFAULT_REGION，与 cdk deploy 实际部署的目标一致），不写死区域。
+    - 已存在 SSM 参数 /cdk-bootstrap/hnb659fds/version 时直接跳过。
+    - 在家目录执行，避免读取本项目 cdk.json 去运行 app.py（此时 tenant_name 尚未设置）。
+    - --yes 避免 npx 停在 "Ok to proceed?" 提示等待输入。
+    """
+    from botocore.exceptions import BotoCoreError, ClientError
+
+    session = boto3.session.Session()
+    region = session.region_name
+    if not region:
+        print("  ✗ 未检测到 AWS 区域，请设置 AWS_REGION 环境变量或运行 aws configure。")
+        sys.exit(1)
+    try:
+        account = session.client("sts").get_caller_identity()["Account"]
+    except (BotoCoreError, ClientError) as e:
+        print(f"  ✗ 获取 AWS 账号失败，请检查凭证: {e}")
+        sys.exit(1)
+    env = f"aws://{account}/{region}"
+
+    try:
+        session.client("ssm").get_parameter(Name=CDK_BOOTSTRAP_VERSION_PARAM)
+        print(f"  ✓ {env} 已完成 CDK bootstrap，跳过。")
+        return
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "")
+        if code != "ParameterNotFound":
+            print(f"  ⚠ 无法确认 bootstrap 状态（{code}），将尝试执行 bootstrap ...")
+    except BotoCoreError as e:
+        print(f"  ⚠ 无法确认 bootstrap 状态（{e}），将尝试执行 bootstrap ...")
+
+    print(f"\n  正在执行 CDK bootstrap: {env} ...")
+    try:
+        result = subprocess.run(
+            ["npx", "--yes", "aws-cdk@latest", "bootstrap", env],
+            cwd=os.path.expanduser("~"),
+        )
+    except FileNotFoundError:
+        print("  ✗ 未找到 npx 命令，请先安装 Node.js。")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\n  bootstrap 已被用户中断。")
+        sys.exit(1)
+    if result.returncode != 0:
+        print("  ✗ CDK bootstrap 失败，请检查 CloudFormation 控制台中的 CDKToolkit Stack。")
+        sys.exit(1)
+    print(f"  ✓ CDK bootstrap 完成: {env}")
+
+
 # ─── 主入口 ──────────────────────────────────────────────────────────────────
 
 def main():
+    # 设置 jsii 缓存变量并切换到项目目录（destroy / clean 同样需要）
+    setup_runtime_env()
+
     print()
     print("╔══════════════════════════════════════════════════════════╗")
     print("║   Amazon Connect Voice Channel CLI Deployment Tool      ║")
@@ -1130,8 +1387,11 @@ def main():
     # 部署前确保 CDK 依赖已安装
     ensure_dependencies()
 
-    # 步骤 1: 确认 Connect 实例（安全配置文件信息由 step1 写入 security_profile.json）
+    # 步骤 1: 选择区域并确认 Connect 实例（安全配置文件信息由 step1 写入 security_profile.json）
     connect_instance_arn, _ = step1_connect_instance()
+
+    # 确保所选区域已完成 CDK bootstrap（已完成则跳过）；须在 step1 选定区域之后执行
+    ensure_cdk_bootstrap()
 
     # 步骤 2: 选择语言和语音
     tts_voice, selected_lang, region_key = step2_language_voice()

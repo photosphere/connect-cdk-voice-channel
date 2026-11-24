@@ -27,10 +27,31 @@ source .venv/bin/activate   # macOS / Linux
 
 # 安装依赖
 pip install -r requirements.txt
-
-# 首次使用需要 bootstrap CDK（每个 AWS 账户/区域只需执行一次）
-cdk bootstrap
 ```
+
+> **CDK bootstrap 由脚本自动完成**：`deploy_cli.py` 在步骤 1 选定区域后，会检查当前账号在该区域是否已 bootstrap
+> （SSM 参数 `/cdk-bootstrap/hnb659fds/version`），未完成时在家目录自动执行
+> `npx --yes aws-cdk@latest bootstrap aws://<账号>/<区域>`，无需手动运行。
+> 如需手动执行，请勿在项目目录内运行 `cdk bootstrap`：项目的 `cdk.json` 会先运行 `app.py`，
+> 而此时 `tenant_name` 等环境变量尚未设置，会报 `KeyError`。
+
+### 在 AWS CloudShell 中运行
+
+```bash
+git clone https://github.com/photosphere/connect-cdk-voice-channel.git
+python3 ~/connect-cdk-voice-channel/deploy_cli.py
+```
+
+脚本会自动处理 CloudShell 下的以下问题，无需手动执行对应命令：
+
+| 手动命令 | 脚本中的处理 |
+|---------|-------------|
+| `export JSII_RUNTIME_PACKAGE_CACHE=disabled` | 启动时设置该环境变量（已设置则保留原值），避免 CloudShell 家目录权限为 0777 时 jsii 报 "Cannot use the jsii package cache" |
+| `cd ~ && npx --yes aws-cdk@latest bootstrap aws://<账号>/<区域>` | 步骤 1 选定区域后自动检测并执行；区域为步骤 1 中选择的区域，不固定为 `us-east-1` |
+| `cd ~/connect-cdk-voice-channel` | 启动时自动切换到脚本所在目录，可从任意目录运行 |
+| `pip install -r requirements.txt` | 缺少依赖时自动创建 `.venv` 并安装 |
+
+> 部署区域与 bootstrap 区域均为步骤 1 中选择的区域，与 CloudShell 所在区域无关；CloudShell 所在区域仅作为默认选项。
 
 ---
 
@@ -99,6 +120,7 @@ cdk bootstrap
       "Sid": "AmazonConnectManagement",
       "Effect": "Allow",
       "Action": [
+        "connect:ListInstances",
         "connect:DescribeInstance",
         "connect:ListSecurityProfiles",
         "connect:UpdateSecurityProfile",
@@ -239,19 +261,33 @@ python deploy_cli.py help       # 显示帮助信息
 
 ### 步骤 1：确认 Amazon Connect 实例
 
-工具会提示您输入 Amazon Connect 实例的 ARN：
+工具先列出 Amazon Connect 可用区域供您选择，再列出该区域内所有 ACTIVE 状态的实例供您选择：
 
 ```
 ============================================================
   步骤 1: 确认 Amazon Connect 实例
 ============================================================
 
-请输入 Amazon Connect 实例 ARN: arn:aws:connect:us-east-1:123456789012:instance/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  AWS 区域（Connect 实例所在区域）：
+    1) af-south-1
+    2) ap-northeast-1
+    ...
+    9) us-east-1（默认）
+    10) us-west-2
+  请输入序号或区域名 [9]: 9
+  ✓ 区域: us-east-1
+
+  正在查询 us-east-1 区域的 Connect 实例...
+
+  请选择 Connect 实例（区域 us-east-1）：
+    1) my-connect-demo  xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    2) my-connect-test  yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+  请输入序号或实例 ARN: 1
 ```
 
-**获取 ARN 的方法：**
-1. 登录 AWS 控制台 → Amazon Connect → 选择您的实例
-2. 在实例概览页面复制 **实例 ARN**
+- **区域**：可输入序号或区域名（如 `eu-central-1`）；直接回车选择默认区域，即当前区域：依次取环境变量 `AWS_REGION`、`AWS_DEFAULT_REGION`、`~/.aws/config` 中当前 profile 的 `region`（在 CloudShell 中即控制台所在区域）。所选区域同时用于后续 CDK bootstrap 与 `cdk deploy`，资源会部署到实例所在区域。
+- **实例**：列表显示实例别名和实例 ID；区域内只有一个实例时直接回车即可选中。也可以直接粘贴实例 ARN，但 ARN 中的区域必须与所选区域一致。
+- 若列举实例失败（例如缺少 `connect:ListInstances` 权限）或该区域没有实例，工具会改为提示手动输入实例 ARN（格式 `arn:aws:connect:<区域>:<12 位账号>:instance/<实例ID>`），可在 AWS 控制台 → Amazon Connect → 实例概览页面复制。
 
 **此步骤自动完成的操作：**
 - 调用 `describe_instance` 验证实例是否存在
@@ -653,7 +689,7 @@ Agent02,Test,Agent02_Test,Aa12345678.,,,
 python deploy_cli.py destroy
 ```
 
-输入部署时使用的租户名称（即 CloudFormation Stack 名称），确认后执行 `cdk destroy --force`。
+先选择 Stack 所在区域（即部署时选择的区域），再输入部署时使用的租户名称（即 CloudFormation Stack 名称），确认后执行 `cdk destroy --force`。
 
 ---
 
@@ -673,8 +709,14 @@ python deploy_cli.py clean
 **Q: 部署失败提示 "未找到 cdk 命令"**
 > 请确认已全局安装 AWS CDK CLI：`npm install -g aws-cdk`
 
+**Q: CloudShell 中报 "Cannot use the jsii package cache ... (mode 0777)"**
+> 通过 `deploy_cli.py` 运行时脚本已自动设置 `JSII_RUNTIME_PACKAGE_CACHE=disabled`。若不经过脚本直接运行 `cdk` 命令，请先手动执行 `export JSII_RUNTIME_PACKAGE_CACHE=disabled`。
+
+**Q: 部署失败提示 "SSM parameter /cdk-bootstrap/hnb659fds/version not found"**
+> 当前账号/区域尚未 bootstrap。脚本会在部署前自动执行 bootstrap；若自动执行失败，通常是当前身份缺少创建 IAM 角色等权限，请由管理员在家目录（而非项目目录）执行 `npx --yes aws-cdk@latest bootstrap aws://<账号>/<区域>`。
+
 **Q: 验证 Connect 实例失败**
-> 请检查：1) ARN 格式是否正确；2) AWS CLI 凭证是否有 `connect:DescribeInstance` 权限；3) 区域是否匹配。
+> 请检查：1) ARN 格式是否正确；2) AWS CLI 凭证是否有 `connect:DescribeInstance` 权限；3) 步骤 1 中选择的区域是否为实例所在区域。
 
 **Q: 部署后在 Connect 控制台看不到资源**
 > 请确认您查看的是正确的 Connect 实例。资源名称均以您输入的租户名称为前缀。
